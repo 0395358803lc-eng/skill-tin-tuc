@@ -34,6 +34,10 @@ def tokens(value:str)->set[str]:
     return {s for s in norm_title(value).split() if (len(s)>=3 or s.isdigit()) and s not in STOPWORDS}
 
 def title_relation(a:str,b:str)->float:
+    # Do not conflate distinct numbered events (CPI 2.1% vs CPI 2.2%).
+    numbers_a=set(re.findall(r'\d+(?:[.,]\d+)?%?',norm_title(a)))
+    numbers_b=set(re.findall(r'\d+(?:[.,]\d+)?%?',norm_title(b)))
+    if numbers_a != numbers_b:return 0.0
     ta,tb=tokens(a),tokens(b)
     if not ta or not tb:return 0.0
     return round(len(ta&tb)/max(len(ta),len(tb)),3)
@@ -150,8 +154,11 @@ def audited_sources(story:dict)->dict:
             'claim_independence_pass':bool(claims) and all(c['independent_support'] for c in claims),
             'human_source_review_required':True}
 
-def research_review(bundle:dict,baseline:dict,window_hours:int)->dict:
+def research_review(bundle:dict,baseline:dict,window_hours:int,requested_country:str|None=None)->dict:
     if window_hours not in (6,24,72,168):raise ValueError('unsupported news window')
+    if requested_country is not None and (not isinstance(requested_country,str) or
+                                           not requested_country.strip()):
+        raise ValueError('invalid requested event country')
     base={x['id']:x for x in baseline['story_reports']}
     ranks={x['id']:x['editorial_priority_score'] for x in baseline.get('editorial_ranking',[])}
     as_of=core.timestamp(bundle['as_of'],'as_of')
@@ -180,6 +187,11 @@ def research_review(bundle:dict,baseline:dict,window_hours:int)->dict:
                     events.append('SOURCE_RETRIEVED_BEFORE_PUBLICATION:'+str(source.get('id')))
             except (TypeError,ValueError):
                 events.append('SOURCE_TIMESTAMP_UNVERIFIED:'+str(source.get('id')))
+        # RSS edition is not the event location; inspect human-entered evidence.
+        event_country=str(story.get('event_country','')).strip().upper()
+        if requested_country and requested_country.upper()!='WORLD':
+            if event_country!=requested_country.upper():
+                events.append('EVENT_COUNTRY_MISMATCH')
         # Never infer event location from Google News region or URL.
         eligible=base[sid]['eligible_for_human_editorial_review'] and provenance['claim_independence_pass'] and not events
         audited.append({'id':sid,'headline':story.get('headline'),
@@ -195,7 +207,8 @@ def research_review(bundle:dict,baseline:dict,window_hours:int)->dict:
     return {'status':'INDEPENDENT_EVIDENCE_AND_FRESHNESS_SCREEN_ONLY',
         'eligible_count':len(ranked),'checked_count':len(audited),
         'shortlist':ranked[:12],'all_reviews':audited,
-        'requested_window_hours':window_hours,'auto_verified_truth':False,
+        'requested_window_hours':window_hours,'requested_event_country':requested_country,
+        'auto_verified_truth':False,
         'user_selection_and_exact_script_approval_required':True}
 
 def markdown(report:dict)->str:
