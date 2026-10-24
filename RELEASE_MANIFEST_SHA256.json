@@ -9,8 +9,8 @@
   "manifest_self_hash_excluded": true,
   "hash_algorithm": "SHA-256",
   "total_files": 91,
-  "total_bytes": 807301,
-  "content_set_sha256": "148a624039f664c9e6eeab1bdde4fc82a148f9aae8941c282e2bfbbb22d65bff",
+  "total_bytes": 807344,
+  "content_set_sha256": "42d9fcf815d643538a1f872c7f833e6d1b240cfcc3769fc95a11ab1c34fe631b",
   "files": [
     {
       "path": ".github/workflows/source-checks.yml",
@@ -234,8 +234,8 @@
     },
     {
       "path": "scripts/news_rss.py",
-      "bytes": 13298,
-      "sha256": "c6ffba87f0edfdb169c26eceada5d6295738e57d16025bd0d0b76e3dfcb93941"
+      "bytes": 13341,
+      "sha256": "69a49641590db8a47b9df1891085eaa69027e79b8703273059d1473825fae8db"
     },
     {
       "path": "scripts/qa_engine.py",
