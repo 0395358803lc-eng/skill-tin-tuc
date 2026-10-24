@@ -103,7 +103,7 @@ Nếu chưa rõ mới hỏi các tham số: quốc gia/khu vực sự kiện (US
 ## Tham chiếu
 - `README.md` — trạng thái khả năng thực tế và ví dụ lệnh.
 - `references/PORTABILITY_CONTRACT.md` — hợp đồng đường dẫn và runtime trên máy mới.
-- `references/STAGE2_WORKFLOW_CONTRACT.md` — giới hạn cảnh chung, nhạc/từ điển SHA-256 được duyệt, checkpoint render, chặn phục hồi không an toàn và tách hai xác nhận người dùng.
+- `references/STAGE2_WORKFLOW_CONTRACT.md`, `references/STAGE3_RESEARCH_CONTRACT.md` — giới hạn cảnh chung, nhạc/từ điển SHA-256 được duyệt, checkpoint render, chặn phục hồi không an toàn và tách hai xác nhận người dùng.
 - `references/AGENT_ORCHESTRATION.md` — tiếp nhận ngôn ngữ tự nhiên, tách job nhiều phiên, P0–P7 và phục hồi an toàn.
 - `references/TRANSFER_ZIP_WINDOWS.md` — đóng ZIP thủ công, danh sách SHA-256 và xác minh sau khi chuyển máy.
 - `RELEASE_MANIFEST_SHA256.json` cùng `scripts/release_manifest.py` — bộ kiểm chứng nguyên vẹn nguồn, **không chứng nhận GA**.
