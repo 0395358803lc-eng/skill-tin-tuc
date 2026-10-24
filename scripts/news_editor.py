@@ -157,7 +157,7 @@ def main() -> None:
             core.write_new(opts.out, approved)
             summary = {'status': approved['status'], 'stories': len(approved['stories']),
                        'aspect_ratio': approved['aspect_ratio'],
-                       'note': 'Only 9:16 renderer exists in v0.3; 16:9 waits for Stage 10.'}
+                       'note': 'Approved script can render 9:16 and 16:9; human fact and media-rights review remains mandatory.'}
         print(json.dumps(summary, ensure_ascii=False))
     except (ValueError, KeyError, OSError, TypeError, json.JSONDecodeError) as exc:
         ap.exit(2, 'EDITORIAL_ERROR: ' + str(exc) + '\n')
