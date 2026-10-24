@@ -8,9 +8,9 @@
   "automatic_publication": false,
   "manifest_self_hash_excluded": true,
   "hash_algorithm": "SHA-256",
-  "total_files": 85,
-  "total_bytes": 757996,
-  "content_set_sha256": "173269658391e418b78630744fffdd88187990b72b1c3db18dc93fc92dd520d7",
+  "total_files": 87,
+  "total_bytes": 780849,
+  "content_set_sha256": "36fe418490a3415a994c231af7015a3fe79af9106e19cf196835440e951e4a23",
   "files": [
     {
       "path": ".github/workflows/source-checks.yml",
@@ -49,8 +49,8 @@
     },
     {
       "path": "README.md",
-      "bytes": 4651,
-      "sha256": "0e0f7fda09ef7addf8ca1bcff3aad45b838c7020304c61b9364ab0006539b54e"
+      "bytes": 5404,
+      "sha256": "f238be6808a96bf829139e409f4cefdedf61f1291daac7c5fd8ce8cfea0fd706"
     },
     {
       "path": "references/AGENT_ORCHESTRATION.md",
@@ -116,6 +116,11 @@
       "path": "references/STAGE21_RELEASE_CHECKLIST.md",
       "bytes": 4625,
       "sha256": "eab010eca9284f164574d5d63be00679797830e4518aab3cc8b2e88aed8b55b1"
+    },
+    {
+      "path": "references/STAGE2_WORKFLOW_CONTRACT.md",
+      "bytes": 4663,
+      "sha256": "4e1d6804c5fd1efbaed98d551956917690dcb56541651ec55c39db593ef88bdd"
     },
     {
       "path": "references/TRANSFER_ZIP_WINDOWS.md",
@@ -194,13 +199,13 @@
     },
     {
       "path": "scripts/editorial_core.py",
-      "bytes": 18858,
-      "sha256": "fc141bc89df603396788c7526801f7a13649e2a9c76da921f0bc22b692152c49"
+      "bytes": 20533,
+      "sha256": "be48ce75fbbaaffb8579c3bfa6e8ef31a8239ad6854b2db3c50f12ead5ef4e10"
     },
     {
       "path": "scripts/job_integrity.py",
-      "bytes": 10859,
-      "sha256": "f3ba70e1c5b46baa8009f9c41f62c0a798dd4b05293cdb959a915dfea0ac9171"
+      "bytes": 11220,
+      "sha256": "033858e937696fa5982667f16c607fc4ede6699eacc8222b18064c8a128c3a97"
     },
     {
       "path": "scripts/media_catalog.py",
@@ -344,18 +349,18 @@
     },
     {
       "path": "scripts/video_pipeline.py",
-      "bytes": 23805,
-      "sha256": "88458f3c12212a983f7a758cb5b99d6ab9efd0d13d3f7de50077c5fa3c24fb26"
+      "bytes": 25832,
+      "sha256": "ebc1ea93eebd5b5ff4983800df4b02d4b7a6d616195198d19cbf318ac9807536"
     },
     {
       "path": "scripts/workflow.py",
-      "bytes": 31073,
-      "sha256": "78727eb002708f38f25f85e922e489afbfc496d8ae8df79fd5b47b9d745f7626"
+      "bytes": 34472,
+      "sha256": "857125cc97a3749c868e71e045a32676053e47e00dc7b3a777c632b8c46e6fc9"
     },
     {
       "path": "SKILL.md",
-      "bytes": 21024,
-      "sha256": "0b2d059839f7a84b36dc9a55b7f1256a525bf4581bb66829ceefaaa7722ea6d0"
+      "bytes": 21241,
+      "sha256": "983884dc9d6b5e975f4120e09bc7bf942c56e823bc4459fc07e51791d9cac11a"
     },
     {
       "path": "tests/test_duration_planner.py",
@@ -406,6 +411,11 @@
       "path": "tests/test_stage2_bootstrap.py",
       "bytes": 8926,
       "sha256": "8628616562594f33b411b09e542dca524d3aa6215baac298b80e3a291522c2f9"
+    },
+    {
+      "path": "tests/test_stage2_workflow.py",
+      "bytes": 9758,
+      "sha256": "d85e19be34f55239b43ed1e543f2687458e0ef0b6f5f71ccf1fff622745183b1"
     },
     {
       "path": "tests/test_stage3_agent_bridge.py",
