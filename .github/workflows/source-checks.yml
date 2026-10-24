@@ -1,0 +1,86 @@
+name: Source checks
+
+on:
+  push:
+    branches: [main, "stage1/**"]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  source-validation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Install test dependencies
+        run: python -m pip install -r requirements.txt
+      - name: Create clean source export
+        run: |
+          mkdir -p "$RUNNER_TEMP/skill-source"
+          git archive HEAD | tar -x -C "$RUNNER_TEMP/skill-source"
+      - name: Python syntax (read-only)
+        working-directory: ${{ runner.temp }}/skill-source
+        run: |
+          python - <<'PY'
+          import ast
+          from pathlib import Path
+          files = list(Path('scripts').rglob('*.py')) + list(Path('tests').rglob('*.py'))
+          for file in files:
+              ast.parse(file.read_text(encoding='utf-8-sig'), filename=str(file))
+          print(f"Python AST: {len(files)} files PASS")
+          PY
+      - name: Unit tests
+        working-directory: ${{ runner.temp }}/skill-source
+        env:
+          PYTHONDONTWRITEBYTECODE: "1"
+        run: |
+          python -B - <<'PY'
+          import sys
+          import unittest
+
+          source = unittest.defaultTestLoader.discover("tests")
+          filtered = unittest.TestSuite()
+          excluded = []
+
+          def append_tests(group):
+              for entry in group:
+                  if isinstance(entry, unittest.TestSuite):
+                      append_tests(entry)
+                  elif entry.id().endswith("test_tts_preflight.PreflightTests.test_audio_duration_reports_without_changing_input"):
+                      excluded.append(entry.id())
+                  else:
+                      filtered.addTest(entry)
+
+          append_tests(source)
+          assert len(excluded) == 1, f"Unexpected model-dependent tests: {excluded}"
+          print("Source CI excludes only licensed Piper-model hardware test:", excluded[0])
+          result = unittest.TextTestRunner(verbosity=1).run(filtered)
+          sys.exit(0 if result.wasSuccessful() else 1)
+          PY
+      - name: Verify portable release manifest
+        working-directory: ${{ runner.temp }}/skill-source
+        env:
+          PYTHONDONTWRITEBYTECODE: "1"
+        run: python -B scripts/release_manifest.py verify
+      - name: Confirm release candidate metadata
+        working-directory: ${{ runner.temp }}/skill-source
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          text = Path("SKILL.md").read_text(encoding="utf-8-sig")
+          package = json.loads(Path("remotion-template/package.json").read_text())
+          lock = json.loads(Path("remotion-template/package-lock.json").read_text())
+          manifest = json.loads(Path("RELEASE_MANIFEST_SHA256.json").read_text())
+          versions = [package["version"], lock["version"], lock["packages"][""]["version"], manifest["version"]]
+          assert all(v == "1.0.0-rc.2" for v in versions), versions
+          assert "version: 1.0.0-rc.2" in text
+          assert manifest["release_status"] == "RELEASE_CANDIDATE_NOT_GA"
+          PY

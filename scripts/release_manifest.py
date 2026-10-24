@@ -21,7 +21,7 @@ import release_audit
 MANIFEST_NAME = "RELEASE_MANIFEST_SHA256.json"
 SCHEMA = "AI_NEWS_SKILL_SOURCE_RELEASE_V1"
 VERSION = "1.0.0-rc.2"
-VALID_SUFFIXES = {".py", ".md", ".ps1", ".txt", ".jsx", ".json"}
+VALID_SUFFIXES = {".py", ".md", ".ps1", ".txt", ".jsx", ".json", ".yml", ".yaml"}
 FORBIDDEN_COMPONENTS = {
     ".git", ".venv", "__pycache__", "node_modules", "_work",
     "output", "logs", "jobs", "deliveries", ".idea", ".vscode",
