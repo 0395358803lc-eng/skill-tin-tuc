@@ -167,3 +167,43 @@ jobs:
           if ($preflightCode -notin @(0,2) -or $outputText -notmatch 'CHECK_ONLY_NO_MUTATION') { throw 'Windows read-only preflight did not report correctly' }
           Write-Host 'WINDOWS_PORTABLE_RC_ZIP_AND_READONLY_PREFLIGHT_PASS'
           Write-Host 'NO_PIPER_VOICE_RENDER_NO_GPU_NO_GA_CLAIM'
+
+  publish-rc-prerelease:
+    name: Publish verified RC prerelease (never GA)
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [source-validation, windows-source-portability]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: news-skill-rc-source-${{ github.run_id }}
+          path: ${{ runner.temp }}/rc-release
+      - name: Publish immutable v1.0.0-rc.2 prerelease only
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/rc-release"
+          tag="v1.0.0-rc.2"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            echo "Existing RC release found: refusing to overwrite its tag or assets."
+            gh release view "$tag" --json isPrerelease,tagName --jq '{tagName,isPrerelease}'
+            exit 0
+          fi
+          cat > "$RUNNER_TEMP/stage6-release-notes.md" <<'NOTES'
+          ## AI News Video Skill — v1.0.0-rc.2 (Release Candidate)
+          Source-only, clean portable Windows ZIP. This is **not v1.0.0 GA**.
+          - The ZIP is SHA-256 verified, with a source manifest and a standalone ZIP checksum.
+          - GitHub CI tests Python source and synthetic 9:16/16:9 FFmpeg media.
+          - GitHub Windows runner verifies ZIP extraction, source hashes and read-only preflight.
+          - Real Piper/Remotion/GPU rendering on an independent Windows installation and human visual/audio approval are STILL REQUIRED before any GA release.
+          - No runtime models, MP4 files, secrets, API posting or platform integration are included.
+          - Review `references/STAGE6_RELEASE_AND_WINDOWS_GATE.md` after extraction. Do not publish DEMO assets.
+          NOTES
+          gh release create "$tag"             AI-News-Video-Skill-1.0.0-rc.2-source.zip             RC_ZIP_SHA256.txt             RC_MANIFEST_SHA256.txt             rc_ga_gate.json             rc_package_result.json             rc_verify_result.json             --target "$GITHUB_SHA"             --title "AI News Video Skill v1.0.0-rc.2 — Portable source (prerelease)"             --notes-file "$RUNNER_TEMP/stage6-release-notes.md"             --prerelease --latest=false
+          gh release view "$tag" --json isPrerelease,tagName --jq '{tagName,isPrerelease}'
