@@ -8,9 +8,9 @@
   "automatic_publication": false,
   "manifest_self_hash_excluded": true,
   "hash_algorithm": "SHA-256",
-  "total_files": 91,
-  "total_bytes": 807344,
-  "content_set_sha256": "42d9fcf815d643538a1f872c7f833e6d1b240cfcc3769fc95a11ab1c34fe631b",
+  "total_files": 95,
+  "total_bytes": 834555,
+  "content_set_sha256": "0800cf1fc8ee85ef46029f005b7ffca8b48cc43c16a3f8861f2d4bc0cac04804",
   "files": [
     {
       "path": ".github/workflows/source-checks.yml",
@@ -49,8 +49,8 @@
     },
     {
       "path": "README.md",
-      "bytes": 6034,
-      "sha256": "6a51206583b81dc28f4fc7b27f6d4cfc4c15ee48b2ae019772482552ac6d64a6"
+      "bytes": 6688,
+      "sha256": "c71a2d405cd7cd9b411ef1d5558c9c38bc8322c0993159e43f45cc813f10cbf3"
     },
     {
       "path": "references/AGENT_ORCHESTRATION.md",
@@ -128,6 +128,11 @@
       "sha256": "5b3b132e629d1bf696c4e38550f66774cb625a41c964dd5ab9301c493a245965"
     },
     {
+      "path": "references/STAGE4_AV_QUALITY_CONTRACT.md",
+      "bytes": 6360,
+      "sha256": "15ce3e1bdcba92d2e31e2e58fb37fbba53932529fbc2650a5002ca421f0062ad"
+    },
+    {
       "path": "references/TRANSFER_ZIP_WINDOWS.md",
       "bytes": 5535,
       "sha256": "3ce14773c57848588d332ffe381a10d92aa16ebcc2fb97d665dab407f58366a0"
@@ -139,8 +144,8 @@
     },
     {
       "path": "references/VIDEO_PRODUCTION.md",
-      "bytes": 6817,
-      "sha256": "1efba60d35fd436d8e168bdaed2e93cca5cc1bceb5377c432f0c2e8e914a6445"
+      "bytes": 7646,
+      "sha256": "f11e513ef2fbcbe1ea8e8ba623fced3f14cc093a0935f4a7b20a6f772bb97604"
     },
     {
       "path": "references/WINDOWS_BOOTSTRAP.md",
@@ -164,8 +169,8 @@
     },
     {
       "path": "remotion-template/src/News.jsx",
-      "bytes": 12905,
-      "sha256": "e085a31c64657ee86d4be7fb81598167185aa80fec515f679d0f81243c91104c"
+      "bytes": 13131,
+      "sha256": "10496ff52819099b087e9426ac5b9e4c0bf25041ad3b74a32246cfdf7e4a8be2"
     },
     {
       "path": "requirements-benchmark.txt",
@@ -218,14 +223,24 @@
       "sha256": "033858e937696fa5982667f16c607fc4ede6699eacc8222b18064c8a128c3a97"
     },
     {
+      "path": "scripts/local_alignment.py",
+      "bytes": 4050,
+      "sha256": "7d72e2c1c146ae27690c9a83b8268d50190aa2b09f29fbb66e38528c30c5eaef"
+    },
+    {
+      "path": "scripts/local_voices.py",
+      "bytes": 2121,
+      "sha256": "77bda4e378f29ff3085eb9f2d1e69718e215eefc8148e97295ce47e48a018f90"
+    },
+    {
       "path": "scripts/media_catalog.py",
       "bytes": 3834,
       "sha256": "51c75d405c463a31d39e5a01b8baa34e63960a793f7afd9cde6a7d2b28335a2f"
     },
     {
       "path": "scripts/narration_quality.py",
-      "bytes": 4516,
-      "sha256": "f8340bce0feabd9805e6e946b82950b94579ccbfcb3d5c8da7f71b373f7aedee"
+      "bytes": 4858,
+      "sha256": "113640ece731a5d40049674c7e3adbe4e9725ffe67692e56f337097c79b5f6a0"
     },
     {
       "path": "scripts/news_editor.py",
@@ -239,8 +254,8 @@
     },
     {
       "path": "scripts/qa_engine.py",
-      "bytes": 20640,
-      "sha256": "0922adceb10766fc739fd3a4771339c31bee8c13d8b3681c24c26d64f1275518"
+      "bytes": 21112,
+      "sha256": "92efff8edc1142be10ed68ef467dcbe5e1a072991cc932981a1c3f1c821d707d"
     },
     {
       "path": "scripts/qa_repair.py",
@@ -259,8 +274,8 @@
     },
     {
       "path": "scripts/render_video.py",
-      "bytes": 22814,
-      "sha256": "551e889f4b04c963fccc601c30cc10a9345f6379822a1a92eb2c21ed9497b958"
+      "bytes": 23244,
+      "sha256": "d5039ad79a640a621318e3c1abc7782d3790348a5e3a6875403005dde7ef04c1"
     },
     {
       "path": "scripts/research_enrichment.py",
@@ -294,8 +309,8 @@
     },
     {
       "path": "scripts/smart_media.py",
-      "bytes": 7609,
-      "sha256": "5ddc2a31dc8871405e3c3e7b57a7ed4e82d4696100ad94bfda205eca29ddc8ef"
+      "bytes": 8279,
+      "sha256": "dd5894bdc93fcb47778418fa5bbc41f0c79801ac0fcf13a976124828b217fafb"
     },
     {
       "path": "scripts/source_reader.py",
@@ -364,8 +379,8 @@
     },
     {
       "path": "scripts/video_pipeline.py",
-      "bytes": 25832,
-      "sha256": "ebc1ea93eebd5b5ff4983800df4b02d4b7a6d616195198d19cbf318ac9807536"
+      "bytes": 28466,
+      "sha256": "dc50027855756bf998fe1a9e4ae96940e29e64ca3ab3cb75c856f39f1ae4584d"
     },
     {
       "path": "scripts/workflow.py",
@@ -374,8 +389,8 @@
     },
     {
       "path": "SKILL.md",
-      "bytes": 21283,
-      "sha256": "a8c638d70ffe6cfb90fb62d3ce5927fcb47c16cf951dcdd78e2fb931be89124b"
+      "bytes": 21327,
+      "sha256": "ef59e017dcf1bec6e29dd8cdfd9567db019903d966c36471c671b640a82fee20"
     },
     {
       "path": "tests/test_duration_planner.py",
@@ -446,6 +461,11 @@
       "path": "tests/test_stage4.py",
       "bytes": 15301,
       "sha256": "a3e567205ed8ac005527524448dd19a30121810eccd887e2b68ac010b7164c16"
+    },
+    {
+      "path": "tests/test_stage4_av.py",
+      "bytes": 8379,
+      "sha256": "d840d1d7f61510bf5e34c34ca4a5037a795df2f5f390bf4dd4173cb5920dfc9c"
     },
     {
       "path": "tests/test_stage5.py",
