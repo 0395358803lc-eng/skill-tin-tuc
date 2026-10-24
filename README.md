@@ -48,3 +48,6 @@ Bộ mã nguồn vẫn **v1.0.0-rc.2**, GA cần nghiệm thu Windows độc l�
 
 ## Đợt 3 — Research safety và biên tập (13–17)
 Bộ thu thập RSS đã bổ sung validation market/category/window, giới hạn feed, chống gộp nhầm tin theo số liệu và bảo vệ nguồn qua HTTPS kết nối IP công khai đã kiểm chứng. Hồ sơ nguồn yêu cầu đối chiếu **quốc gia xảy ra sự kiện**, nguồn độc lập theo từng claim. Bản nháp ghi cảnh báo chất lượng kịch bản, không tự kết luận tin đúng. Xem `references/STAGE3_RESEARCH_CONTRACT.md` và `tests/test_stage3_research.py`. Tiếp tục giữ `v1.0.0-rc.2` và không tự đăng video.
+
+## Đợt 4 — Nâng cấp video/âm thanh (18–25)
+Mã nguồn đã thêm lựa chọn model Piper cục bộ, nhịp dừng theo dấu câu, tùy chọn căn chỉnh từ qua một aligner offline do người dùng cung cấp, audio ducking/peak limiting, Smart Crop có nhiều khuôn mặt, dấu vết media/rights theo shot, hiệu ứng chuyển shot và workspace Remotion riêng cho từng job. Xem `references/STAGE4_AV_QUALITY_CONTRACT.md` và `tests/test_stage4_av.py`. Không tự tải model AI, không API phân tích ngoài, không tự đăng; GitHub CI không thay thế nghiệm thu nghe nhìn trên Windows. Vẫn là v1.0.0-rc.2.
