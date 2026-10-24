@@ -9,13 +9,13 @@
   "manifest_self_hash_excluded": true,
   "hash_algorithm": "SHA-256",
   "total_files": 85,
-  "total_bytes": 757059,
-  "content_set_sha256": "b6f1a961772d71576b5203bced778bcd330e3787acaa4a1b5b5bfd630ce61c5a",
+  "total_bytes": 757996,
+  "content_set_sha256": "173269658391e418b78630744fffdd88187990b72b1c3db18dc93fc92dd520d7",
   "files": [
     {
       "path": ".github/workflows/source-checks.yml",
-      "bytes": 2341,
-      "sha256": "f6e6d56660fde943e360062548108510bb7017b96af7ad6c8d6546bea3bfec8c"
+      "bytes": 3278,
+      "sha256": "a2785136cec4a3faeff728c00e1357141f8e9eaf8f764e4c7650d4b0d742a63f"
     },
     {
       "path": ".gitignore",
