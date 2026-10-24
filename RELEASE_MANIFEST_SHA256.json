@@ -8,14 +8,14 @@
   "automatic_publication": false,
   "manifest_self_hash_excluded": true,
   "hash_algorithm": "SHA-256",
-  "total_files": 100,
-  "total_bytes": 868605,
-  "content_set_sha256": "598d7aa130b080384ccc4ebe18670e406a10601a82d4cc706af72de362f11643",
+  "total_files": 105,
+  "total_bytes": 903217,
+  "content_set_sha256": "181248725fa80d9c1127fcebd0afdc08dac296a3ab99274b1076e8373b4aa73b",
   "files": [
     {
       "path": ".github/workflows/source-checks.yml",
-      "bytes": 4357,
-      "sha256": "ca462c85a1f1aadfc00d2099b4312785ac7e635e04a9682b83b56a9640a8b812"
+      "bytes": 10478,
+      "sha256": "0bf8eea84a408bd7c869e861646c518d07673e6f56d7113b7bc24b86b020bc59"
     },
     {
       "path": ".gitignore",
@@ -49,8 +49,8 @@
     },
     {
       "path": "README.md",
-      "bytes": 7383,
-      "sha256": "5d39fea79b68b64a5b7a5c32280dd0cb0389b3ad139bf2f1e1243cdf4c0a9e3a"
+      "bytes": 8137,
+      "sha256": "0db296a3ffcf67e6c740ef0ef61ad2bedfab996f62bfbe70e7257af6f7e21b46"
     },
     {
       "path": "references/AGENT_ORCHESTRATION.md",
@@ -74,8 +74,8 @@
     },
     {
       "path": "references/INSTALL_WINDOWS.md",
-      "bytes": 6266,
-      "sha256": "2035fc1f8f0eac56401c3cfd4617b5878a2e6c6bad601ec520b5c3a2bd28e02b"
+      "bytes": 7095,
+      "sha256": "36515b20bcbfb98d390029bbede448ae1cb5fcfd47c99fe8cde6d2868b2d8159"
     },
     {
       "path": "references/NEWS_GATHERING.md",
@@ -138,9 +138,14 @@
       "sha256": "81178418c7406aaf15211d1b5020793d4644e7f52bb8ad8f21999e26224c5df6"
     },
     {
+      "path": "references/STAGE6_RELEASE_AND_WINDOWS_GATE.md",
+      "bytes": 5887,
+      "sha256": "b43545041b73b6578b85bc136b6f7af1243b59a48da22afbc38415a93a04c329"
+    },
+    {
       "path": "references/TRANSFER_ZIP_WINDOWS.md",
-      "bytes": 5535,
-      "sha256": "3ce14773c57848588d332ffe381a10d92aa16ebcc2fb97d665dab407f58366a0"
+      "bytes": 6568,
+      "sha256": "2f8982f8dd91d290f0a8cb64b7c766aa53077d38601f82c20f4099b906f2b873"
     },
     {
       "path": "references/VALIDATION_STAGE5.md",
@@ -256,6 +261,11 @@
       "path": "scripts/news_rss.py",
       "bytes": 13341,
       "sha256": "69a49641590db8a47b9df1891085eaa69027e79b8703273059d1473825fae8db"
+    },
+    {
+      "path": "scripts/package_source.py",
+      "bytes": 8792,
+      "sha256": "273b6fab72cde792e3c71aa06fafe124ae95e1e53c74ae762582c8e5ae232749"
     },
     {
       "path": "scripts/qa_engine.py",
@@ -388,6 +398,11 @@
       "sha256": "254e2348ced7011532b1f8fee38c9956d15bc598a6b89a956ab16645626758ba"
     },
     {
+      "path": "scripts/stage6_release_gate.py",
+      "bytes": 4656,
+      "sha256": "75df9547c6b6b8fe89be5dd9978b55efd0876018c1db0799bc4a208c3a84fcd8"
+    },
+    {
       "path": "scripts/studio_design.py",
       "bytes": 5036,
       "sha256": "5122569d382a0984bd26e9f58576b9bbbf27a7245998220b3ebcf5901ebf991c"
@@ -409,8 +424,8 @@
     },
     {
       "path": "SKILL.md",
-      "bytes": 21365,
-      "sha256": "d2e3bda5e3d3ad0c4c7cdda4fa8b0e6c4d2f421e3fd9bc295d477c71e9381c33"
+      "bytes": 21414,
+      "sha256": "6015b95154c0c5396dbc6b8925b73c8479757f913295f629935f3df0654906fb"
     },
     {
       "path": "tests/test_duration_planner.py",
@@ -501,6 +516,16 @@
       "path": "tests/test_stage5_release_manifest.py",
       "bytes": 4997,
       "sha256": "3eeebaa467122d833e7189596794f672df01e6b078297ad59a742635b184d15d"
+    },
+    {
+      "path": "tests/test_stage6_package.py",
+      "bytes": 4178,
+      "sha256": "a5121a0380ed8dd9828f64a8d3e3e26a87bd080c5f224783a8930066223bb345"
+    },
+    {
+      "path": "tests/test_stage6_release_gate.py",
+      "bytes": 2313,
+      "sha256": "728a1a54a0d20c2a1acff23e5941012ade6befadc797e27451ab87bf93302efc"
     },
     {
       "path": "tests/test_tts_preflight.py",
