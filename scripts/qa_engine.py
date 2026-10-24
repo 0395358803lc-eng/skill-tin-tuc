@@ -54,7 +54,7 @@ def verify_srt(path:Path,seconds:float)->dict:
     raw=path.read_text(encoding="utf-8-sig")
     blocks=[x.strip() for x in re.split(r"\r?\n\s*\r?\n",raw.strip()) if x.strip()]
     if not blocks:raise ValueError("SRT has no cues")
-    if "\\x00" in raw or "\\ufffd" in raw:
+    if chr(0) in raw or chr(0xfffd) in raw:
         raise ValueError("SRT contains corrupted or replacement characters")
     previous=0.
     covered=0.
