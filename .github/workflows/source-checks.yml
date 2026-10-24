@@ -64,6 +64,24 @@ jobs:
           result = unittest.TextTestRunner(verbosity=1).run(filtered)
           sys.exit(0 if result.wasSuccessful() else 1)
           PY
+      - name: Stage 5 synthetic dual-aspect FFmpeg smoke
+        working-directory: ${{ runner.temp }}/skill-source
+        env:
+          PYTHONDONTWRITEBYTECODE: "1"
+        run: |
+          command -v ffmpeg
+          command -v ffprobe
+          python -B scripts/stage5_media_smoke.py --out "${{ runner.temp }}/skill-stage5-av"
+      - name: Save Stage 5 QA report (synthetic only)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: stage5-synthetic-qa-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/skill-stage5-av/summary.json
+            ${{ runner.temp }}/skill-stage5-av/technical-qa-*.json
+          if-no-files-found: ignore
+          retention-days: 14
       - name: Verify portable release manifest
         working-directory: ${{ runner.temp }}/skill-source
         env:
