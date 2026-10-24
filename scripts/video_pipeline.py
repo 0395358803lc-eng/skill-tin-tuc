@@ -14,6 +14,7 @@ import wave
 from pathlib import Path
 
 import render_video as legacy
+import editorial_core as editorial
 import qa_engine
 import narration_quality
 import smart_media
@@ -38,6 +39,34 @@ def secure_path(base: Path, relative: str) -> Path:
     resolved = (base / relative).resolve()
     if not resolved.is_relative_to(base.resolve()) or not resolved.is_file():
         raise ValueError('media path missing, unsafe or outside manifest folder: '+relative)
+    return resolved
+
+def approved_audio_asset(brief:dict, manifest_folder:Path, prefix:str,
+                         requested:Path|None=None)->Path|None:
+    """Reject unapproved replacements of script-locked local audio."""
+    name, expected=brief.get(prefix+'_path'),brief.get(prefix+'_sha256')
+    if name is None and expected is None:
+        if requested is not None:
+            raise ValueError(prefix+' override is not approved')
+        if prefix=='music' and brief.get('music_license'):
+            raise ValueError('music license without approved media')
+        return None
+    if not isinstance(name,str) or not name or not isinstance(expected,str) or len(expected)!=64:
+        raise ValueError(prefix+' approved path/SHA-256 incomplete')
+    if any(x not in '0123456789abcdefABCDEF' for x in expected):
+        raise ValueError(prefix+' approved SHA-256 invalid')
+    resolved=secure_path(manifest_folder,name)
+    if requested is not None and requested.resolve()!=resolved:
+        raise ValueError(prefix+' CLI path differs from approved media')
+    if qa_engine.digest(resolved).lower()!=expected.lower():
+        raise ValueError(prefix+' checksum differs from approved script')
+    if prefix=='music':
+        if not isinstance(brief.get('music_license'),str) or not brief['music_license'].strip():
+            raise ValueError('background music needs approved license evidence')
+        if resolved.suffix.lower() not in ('.wav','.mp3','.flac','.m4a','.ogg'):
+            raise ValueError('unsupported music file type')
+    elif resolved.suffix.lower()!='.json':
+        raise ValueError('pronunciation lexicon must be JSON')
     return resolved
 
 def choose_media(item: dict) -> dict | None:
@@ -207,6 +236,11 @@ def render(brief:dict, brief_file:Path, root:Path, aspect:str, voice:str,
            allow_longer:bool=False, sample_every:int=1) -> dict:
     if sample_every>1 and brief.get('demo') is not True:
         raise ValueError('frame sampling is forbidden for real approved news videos')
+    if music is not None:
+        approved_audio_asset(brief,brief_file.parent,'music',music)
+    chosen_lexicon=os.environ.get('PIPER_PRONUNCIATION_MAP')
+    approved_audio_asset(brief,brief_file.parent,'pronunciation_lexicon',
+                         Path(chosen_lexicon) if chosen_lexicon else None)
     design=studio_design.validate(brief)  # Must come from the approved manifest; never CLI override.
     runtime=Path(os.getenv('NEWS_SKILL_RUNTIME',str(Path(__file__).resolve().parents[2] / (Path(__file__).resolve().parents[1].name+'-runtime')))).resolve()
     remotion=runtime/'remotion'
@@ -218,10 +252,6 @@ def render(brief:dict, brief_file:Path, root:Path, aspect:str, voice:str,
         raise ValueError('REMOTION_CONCURRENCY must be 1..4')
     root.mkdir(parents=True,exist_ok=False)
     studio_design.save_preflight(brief,root/'visual_design.json')
-    chosen_lexicon=os.environ.get('PIPER_PRONUNCIATION_MAP')
-    if chosen_lexicon and brief.get('demo') is not True:
-        if brief.get('pronunciation_lexicon_sha256','').lower()!=qa_engine.digest(Path(chosen_lexicon)).lower():
-            raise ValueError('unapproved voice pronunciation lexicon; add fingerprint to script BEFORE user approval')
     narration,timings,cues,frames=audio_track(brief,root,voice,silence)
     try:
         pronunciation=(json.loads(Path(os.environ['PIPER_PRONUNCIATION_MAP']).read_text(encoding='utf-8-sig'))
@@ -243,8 +273,8 @@ def render(brief:dict, brief_file:Path, root:Path, aspect:str, voice:str,
         jobkey=hashlib.sha256(str(root).encode('utf-8')).hexdigest()[:12]
         for i,(story,timing) in enumerate(zip(brief['stories'],timings),1):
             plan=story.get('visual_plan') or [{'type':'news_card','instruction':'original news graphics'}]
-            if not isinstance(plan,list) or not plan or len(plan)>12:
-                raise ValueError('visual_plan must contain 1..12 scenes')
+            if not isinstance(plan,list) or not plan or len(plan)>editorial.MAX_VISUAL_SCENES:
+                raise ValueError(f'visual_plan must contain 1..{editorial.MAX_VISUAL_SCENES} scenes')
             shots=[]
             for j,scene in enumerate(plan,1):
                 if not isinstance(scene,dict):
@@ -335,6 +365,7 @@ def render(brief:dict, brief_file:Path, root:Path, aspect:str, voice:str,
                            'license_evidence':story.get('image_license'),
                            'requires_human_rights_review':True})
     (root/'media_rights.json').write_text(json.dumps({'media':rights,'music_license':brief.get('music_license'),
+               'music_path':brief.get('music_path'),'music_sha256':brief.get('music_sha256'),
                'rights_status':'REVIEW_REQUIRED_BEFORE_PUBLICATION'},ensure_ascii=False,indent=2),encoding='utf-8')
     return report
 
@@ -375,10 +406,12 @@ def main():
         raise ValueError('music missing or permission evidence missing')
     if not 0.75 <= args.speech_rate <= 1.35:
         raise ValueError('speech-rate must be in 0.75..1.35')
-    if args.lexicon and not args.lexicon.is_file():
-        raise ValueError('pronunciation lexicon is missing')
+    music=approved_audio_asset(brief,brief_file.parent,'music',args.music)
+    lexicon=approved_audio_asset(brief,brief_file.parent,'pronunciation_lexicon',args.lexicon)
     os.environ['PIPER_SPEECH_RATE']=str(args.speech_rate)
-    if args.lexicon: os.environ['PIPER_PRONUNCIATION_MAP']=str(args.lexicon.resolve())
+    os.environ.pop('PIPER_PRONUNCIATION_MAP',None)
+    if lexicon:
+        os.environ['PIPER_PRONUNCIATION_MAP']=str(lexicon)
     if args.dry_run:
         print(json.dumps({'valid':True,'aspect':aspect,'format_count':2 if aspect=='both' else 1,
                           'stories':len(brief['stories']),'demo':bool(brief.get('demo'))},ensure_ascii=False))
@@ -386,7 +419,7 @@ def main():
     if args.out.exists():
         raise ValueError('output already exists: '+str(args.out))
     result=render(brief,brief_file,args.out.resolve(),aspect,voice,args.encoder,
-                  args.demo_silence,args.music,args.allow_longer,args.demo_sample_every)
+                  args.demo_silence,music,args.allow_longer,args.demo_sample_every)
     print(json.dumps(result,ensure_ascii=False,indent=2))
     if result['status']!='TECHNICAL_PASS':
         raise RuntimeError('Video too long; editorial trim required')
