@@ -1,0 +1,43 @@
+name: Source checks
+
+on:
+  push:
+    branches: [main, "stage1/**"]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  source-validation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Install test dependencies
+        run: python -m pip install -r requirements.txt
+      - name: Python syntax
+        run: python -m compileall -q scripts tests
+      - name: Unit tests
+        run: python -B -m unittest discover -s tests -q
+      - name: Verify portable release manifest
+        run: python -B scripts/release_manifest.py verify
+      - name: Confirm release candidate metadata
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          text = Path("SKILL.md").read_text(encoding="utf-8-sig")
+          package = json.loads(Path("remotion-template/package.json").read_text())
+          lock = json.loads(Path("remotion-template/package-lock.json").read_text())
+          manifest = json.loads(Path("RELEASE_MANIFEST_SHA256.json").read_text())
+          versions = [package["version"], lock["version"], lock["packages"][""]["version"], manifest["version"]]
+          assert all(v == "1.0.0-rc.2" for v in versions), versions
+          assert "version: 1.0.0-rc.2" in text
+          assert manifest["release_status"] == "RELEASE_CANDIDATE_NOT_GA"
+          PY
