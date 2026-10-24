@@ -9,8 +9,8 @@
   "manifest_self_hash_excluded": true,
   "hash_algorithm": "SHA-256",
   "total_files": 95,
-  "total_bytes": 834555,
-  "content_set_sha256": "0800cf1fc8ee85ef46029f005b7ffca8b48cc43c16a3f8861f2d4bc0cac04804",
+  "total_bytes": 834612,
+  "content_set_sha256": "b7d5bd600cf7533893d7186f1c65e690c9cbba1ce1c7641c0afc74873eebca61",
   "files": [
     {
       "path": ".github/workflows/source-checks.yml",
@@ -419,8 +419,8 @@
     },
     {
       "path": "tests/test_stage18_19.py",
-      "bytes": 7670,
-      "sha256": "d7e4f8cf5a48f85c84b881de338e37a5d2b393e26d8452a83d0dda7b6ee84cdb"
+      "bytes": 7727,
+      "sha256": "e8381450fd81dd7497c47c89d5822fe6d2acdc35b326c4a6f5142b7948e8ca06"
     },
     {
       "path": "tests/test_stage1_portability.py",
