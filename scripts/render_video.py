@@ -286,7 +286,16 @@ def build_audio(parts: list[str], work: Path, prefix: str, voice: str, demo_sile
                 dest.writeframes(src.readframes(src.getnframes()))
             subtitles.append((cursor, cursor+dur, phrase))
             cursor += dur
-            pause = 0.24
+            # Respect audible sentence boundaries rather than inserting an
+            # identical robotic pause after every TTS chunk.
+            if phrase.rstrip().endswith(('.', '!', '?', '。', '！', '？')):
+                pause = .29
+            elif phrase.rstrip().endswith((',', ';', ':', '，', '；')):
+                pause = .17
+            else:
+                pause = .13
+            if i == len(parts) - 1:
+                pause = .07
             dest.writeframes(b'\0' * round(reference[0]*pause)*reference[1]*reference[2])
             cursor += pause
     return output, subtitles, cursor
