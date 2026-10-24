@@ -344,6 +344,7 @@ def render_job(j:Path,encoder:str="auto",speech_rate:float=1.,voice:str="")->dic
                 raise RuntimeError('renderer missing requested aspect ratio')
             write_once(j/"render_result.json",{"directory":str(target),"attempts":tried,
                 "approved_hash":filehash(j/"approved.json")})
+            event(j,"RENDER_COMMITTED",{"output":str(target),"approved_hash":filehash(j/"approved.json")})
             return {"stage":"RENDERED","directory":str(target),"attempts":tried}
         if iteration==1 and encoder!="cpu":
             # Retry only errors clearly attributable to NVENC; never retry altered content,
