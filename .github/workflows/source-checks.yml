@@ -64,6 +64,14 @@ jobs:
           result = unittest.TextTestRunner(verbosity=1).run(filtered)
           sys.exit(0 if result.wasSuccessful() else 1)
           PY
+      - name: Install FFmpeg for media smoke
+        run: |
+          if ! command -v ffmpeg >/dev/null || ! command -v ffprobe >/dev/null; then
+            sudo apt-get update -qq
+            sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq ffmpeg
+          fi
+          ffmpeg -version | head -n 1
+          ffprobe -version | head -n 1
       - name: Stage 5 synthetic dual-aspect FFmpeg smoke
         working-directory: ${{ runner.temp }}/skill-source
         env:
