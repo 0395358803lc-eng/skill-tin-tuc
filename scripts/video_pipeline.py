@@ -155,6 +155,28 @@ def prepare_media(item: dict, base: Path, public_assets: Path,
             {'media_path':chosen['media_path'],**chosen.get('rights',{})},
             src,qa_engine.digest(src)) if chosen.get('smart_crop') else None}
 
+def isolated_remotion_site(template:Path, job_output:Path)->Path:
+    """Private Remotion public/assets and JS source per output; share installed dependencies only."""
+    site=job_output/'_work'/'remotion-site'
+    if site.exists():
+        raise FileExistsError('private Remotion workspace already exists')
+    if not (template/'src'/'index.jsx').is_file() or not (template/'node_modules'/'remotion').is_dir():
+        raise RuntimeError('Remotion runtime not installed')
+    site.mkdir(parents=True)
+    shutil.copytree(template/'src',site/'src')
+    shutil.copy2(template/'package.json',site/'package.json')
+    (site/'public'/'assets').mkdir(parents=True)
+    modules=site/'node_modules'
+    if os.name=='nt':
+        # A Windows junction works without Developer Mode.
+        process=subprocess.run(['cmd','/c','mklink','/J',str(modules),str((template/'node_modules').resolve())],
+                               capture_output=True,text=True,timeout=30)
+        if process.returncode:
+            raise RuntimeError('private Remotion junction failed: '+process.stderr[-300:])
+    else:
+        modules.symlink_to((template/'node_modules').resolve(),target_is_directory=True)
+    return site
+
 def audio_track(brief: dict, out: Path, voice: str, demo_silence: bool):
     work=out/'_work'
     work.mkdir(exist_ok=False)
@@ -255,6 +277,7 @@ def render(brief:dict, brief_file:Path, root:Path, aspect:str, voice:str,
         raise ValueError('REMOTION_CONCURRENCY must be 1..4')
     root.mkdir(parents=True,exist_ok=False)
     studio_design.save_preflight(brief,root/'visual_design.json')
+    site=isolated_remotion_site(remotion,root)
     narration,timings,cues,frames=audio_track(brief,root,voice,silence)
     try:
         pronunciation=(json.loads(Path(os.environ['PIPER_PRONUNCIATION_MAP']).read_text(encoding='utf-8-sig'))
@@ -269,7 +292,7 @@ def render(brief:dict, brief_file:Path, root:Path, aspect:str, voice:str,
     media_crop_reports={}
     for ratio in (['9:16','16:9'] if aspect=='both' else [aspect]):
         name,w,h,suffix=FORMATS[ratio]
-        assets=remotion/'public'/'assets'
+        assets=site/'public'/'assets'
         assets.mkdir(parents=True,exist_ok=True)
         scenes=[]
         media_crop_reports[ratio]=[]
@@ -319,7 +342,7 @@ def render(brief:dict, brief_file:Path, root:Path, aspect:str, voice:str,
         if sample_every>1:
             command+=['--every-nth-frame',str(sample_every)]
         command+=['--browser-executable',str(browser)]
-        log=execute(command,cwd=remotion,timeout=2400)
+        log=execute(command,cwd=site,timeout=2400)
         (root/('_work/remotion-'+suffix+'.log')).write_text(log[-8000:],encoding='utf-8')
         final=root/('DEMO_DO_NOT_PUBLISH_'+suffix+'.mp4' if brief.get('demo') else 'news_video_'+suffix+'.mp4')
         ffmpeg_master(raw,narration,final,encoder,music,repeat_to_30fps=sample_every>1)
@@ -342,6 +365,7 @@ def render(brief:dict, brief_file:Path, root:Path, aspect:str, voice:str,
             'stage19_smart_crop_opt_in':True,
             'remotion_frame_sampling_step':sample_every,'remotion_concurrency':concurrency,
             'motion_quality':('NATIVE_30FPS' if sample_every==1 else 'DEMO_STRESS_REPEATED_FRAMES_NOT_PRODUCTION'),
+             'remotion_assets_isolated_per_job':True,
             'source_manifest':str(brief_file),'demo':bool(brief.get('demo')),
             'duration_seconds':round(frames/FPS,2),'target_seconds':brief['target_seconds'],
             'formats':output,'Piper_TTS':not silence,'claim_and_media_review_required':True,
