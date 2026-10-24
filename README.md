@@ -45,3 +45,6 @@ Thay đường dẫn bằng vị trí thực tế trên máy đích; runtime ph�
 Đã đồng bộ visual_plan tối đa 20 cảnh giữa editor và renderer; bổ sung phê duyệt SHA-256 cho nhạc nền/từ điển phát âm, kiểm tra file thật tại lúc tạo draft và trước render. Workflow chặn replay sau crash, ghi checkpoint khi commit render, tránh retry CPU khi lỗi bản quyền hoặc dữ liệu. Người dùng vẫn chọn tin và duyệt bản script chính xác, không auto-post. Xem `references/STAGE2_WORKFLOW_CONTRACT.md` và kiểm thử `tests/test_stage2_workflow.py`.
 
 Bộ mã nguồn vẫn **v1.0.0-rc.2**, GA cần nghiệm thu Windows độc lập; CI nguồn không có model Piper và không chứng nhận chất lượng video thực tế.
+
+## Đợt 3 — Research safety và biên tập (13–17)
+Bộ thu thập RSS đã bổ sung validation market/category/window, giới hạn feed, chống gộp nhầm tin theo số liệu và bảo vệ nguồn qua HTTPS kết nối IP công khai đã kiểm chứng. Hồ sơ nguồn yêu cầu đối chiếu **quốc gia xảy ra sự kiện**, nguồn độc lập theo từng claim. Bản nháp ghi cảnh báo chất lượng kịch bản, không tự kết luận tin đúng. Xem `references/STAGE3_RESEARCH_CONTRACT.md` và `tests/test_stage3_research.py`. Tiếp tục giữ `v1.0.0-rc.2` và không tự đăng video.
