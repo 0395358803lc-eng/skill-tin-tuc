@@ -167,6 +167,7 @@ jobs:
           if ($preflightCode -notin @(0,2) -or $outputText -notmatch 'CHECK_ONLY_NO_MUTATION') { throw 'Windows read-only preflight did not report correctly' }
           Write-Host 'WINDOWS_PORTABLE_RC_ZIP_AND_READONLY_PREFLIGHT_PASS'
           Write-Host 'NO_PIPER_VOICE_RENDER_NO_GPU_NO_GA_CLAIM'
+          exit 0  # Mask expected -CheckOnly status 2 only AFTER validating its output
 
   publish-rc-prerelease:
     name: Publish verified RC prerelease (never GA)
