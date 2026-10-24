@@ -4,6 +4,7 @@ from __future__ import annotations
 import datetime as dt
 import hashlib
 import studio_design
+import editorial_quality
 import json
 import re
 from pathlib import Path
@@ -326,6 +327,7 @@ def draft_manifest(bundle: dict, selection: dict, scripts: dict) -> dict:
         manifest['music_license'] = scripts['music_license']
     elif scripts.get('music_license'):
         raise ValueError('music_license without approved music file')
+    manifest['editorial_quality'] = editorial_quality.review(manifest)
     studio_design.validate(manifest) # Preset is included in the user's SHA256 approved script.
     return manifest
 
