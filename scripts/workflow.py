@@ -202,7 +202,8 @@ def checked_evidence(j:Path,source:Path)->dict:
     if (j/"evidence.json").exists():raise ValueError("immutable evidence exists: start a new job to revise")
     bundle=read(source)
     report=core.check_bundle(bundle)
-    enriched=research.research_review(bundle,report,check_job(j)["parameters"]["hours"])
+    cfg=check_job(j)["parameters"]
+    enriched=research.research_review(bundle,report,cfg["hours"],cfg["country"])
     by_id={s["id"]:s for s in enriched["all_reviews"]}
     for item in report["story_reports"]:
         gate=by_id.get(item["id"],{})
