@@ -21,13 +21,33 @@ jobs:
           python-version: "3.13"
       - name: Install test dependencies
         run: python -m pip install -r requirements.txt
-      - name: Python syntax
-        run: python -m compileall -q scripts tests
+      - name: Create clean source export
+        run: |
+          mkdir -p "$RUNNER_TEMP/skill-source"
+          git archive HEAD | tar -x -C "$RUNNER_TEMP/skill-source"
+      - name: Python syntax (read-only)
+        working-directory: ${{ runner.temp }}/skill-source
+        run: |
+          python - <<'PY'
+          import ast
+          from pathlib import Path
+          files = list(Path('scripts').rglob('*.py')) + list(Path('tests').rglob('*.py'))
+          for file in files:
+              ast.parse(file.read_text(encoding='utf-8-sig'), filename=str(file))
+          print(f"Python AST: {len(files)} files PASS")
+          PY
       - name: Unit tests
+        working-directory: ${{ runner.temp }}/skill-source
+        env:
+          PYTHONDONTWRITEBYTECODE: "1"
         run: python -B -m unittest discover -s tests -q
       - name: Verify portable release manifest
+        working-directory: ${{ runner.temp }}/skill-source
+        env:
+          PYTHONDONTWRITEBYTECODE: "1"
         run: python -B scripts/release_manifest.py verify
       - name: Confirm release candidate metadata
+        working-directory: ${{ runner.temp }}/skill-source
         run: |
           python - <<'PY'
           import json
