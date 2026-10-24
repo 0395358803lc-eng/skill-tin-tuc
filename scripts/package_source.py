@@ -129,7 +129,7 @@ def create(source: Path, destination: Path) -> dict:
             or manifest.get("windows_independent_acceptance")!="NOT_RUN_USER_RESPONSIBILITY"):
         raise ValueError("no GA release without verified Windows evidence")
     destination.parent.mkdir(parents=True,exist_ok=True)
-    ordered=sorted((row["path"] for row in manifest["files"])+[release.MANIFEST_NAME],key=str.casefold)
+    ordered=sorted([row["path"] for row in manifest["files"]]+[release.MANIFEST_NAME],key=str.casefold)
     created=False
     try:
         with destination.open("xb") as output:
