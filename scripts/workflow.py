@@ -348,8 +348,11 @@ def render_job(j:Path,encoder:str="auto",speech_rate:float=1.,voice:str="")->dic
         if iteration==1 and encoder!="cpu":
             # Retry only errors clearly attributable to NVENC; never retry altered content,
             # missing licensed media, approval failure, or provenance errors.
-            pattern=r"(?:NVENC|nvenc|CUDA|cuda|GPU requested|No capable devices found|unsupported device)"
-            if not re.search(pattern,output):
+            # A stray GPU keyword in a license/provenance error must never trigger
+            # a second render. Only clearly attributable encoder/driver faults retry.
+            disallowed=r"(?:copyright|licen[cs]e (?:missing|invalid|failed)|checksum|approved (?:media|script)|provenance|SHA-256)"
+            gpu_fault=r"(?:NVENC (?:setup|init|initialization|encode|encoder|device|session|failed)|(?:Cannot load|Failed to load) libcuda|CUDA (?:driver|initialization|error)|No capable devices found|GPU requested|unsupported device)"
+            if re.search(disallowed,output,re.I) or not re.search(gpu_fault,output,re.I):
                 raise RuntimeError("render failure is not a recognized GPU fault; no automatic retry: "+output[-400:])
         else:
             raise RuntimeError("render failed; bounded attempts exhausted: "+output[-600:])
