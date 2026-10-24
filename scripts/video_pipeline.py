@@ -228,10 +228,10 @@ def ffmpeg_master(video: Path, narration: Path, output: Path, encoder: str,
     args=['ffmpeg','-y','-hide_banner','-loglevel','error','-i',video,'-i',narration]
     if music:
         args+=['-stream_loop','-1','-i',music,
-               '-filter_complex','[1:a]volume=1.0,asplit=2[n][side];[2:a]volume=0.20[m];[m][side]sidechaincompress=threshold=0.06:ratio=6:attack=40:release=400[duck];[n][duck]amix=inputs=2:duration=first:weights=1 0.30,loudnorm=I=-16:TP=-1.5:LRA=11[a]',
+               '-filter_complex','[1:a]highpass=f=55,asplit=2[n][side];[2:a]volume=0.16,highpass=f=75[m];[m][side]sidechaincompress=threshold=0.045:ratio=7:attack=25:release=450[duck];[n][duck]amix=inputs=2:duration=first:weights=1 0.32,loudnorm=I=-16:TP=-1.5:LRA=11,alimiter=limit=0.89[a]',
                '-map','0:v:0','-map','[a]']
     else:
-        args+=['-map','0:v:0','-map','1:a:0','-af','loudnorm=I=-16:TP=-1.5:LRA=11']
+        args+=['-map','0:v:0','-map','1:a:0','-af','highpass=f=55,loudnorm=I=-16:TP=-1.5:LRA=11,alimiter=limit=0.89']
     if repeat_to_30fps:
         args+=['-vf','fps=30']  # DEMO stress only: duplicate frames, not native 30-fps motion.
     if encoder=='h264_nvenc':
