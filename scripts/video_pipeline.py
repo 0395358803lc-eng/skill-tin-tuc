@@ -151,11 +151,21 @@ def prepare_media(item: dict, base: Path, public_assets: Path,
                  '-stream_loop','-1','-i',src,'-t',f'{seconds:.4f}',
                  '-vf',filt,'-an','-c:v','libx264','-preset','veryfast','-crf','24',
                  '-movflags','+faststart',public_assets/name],timeout=600)
+    rights={**chosen.get('rights',{}),'media_path':chosen['media_path']}
+    rights_trace={'media_path':chosen['media_path'],
+                  'source_sha256':qa_engine.digest(src),
+                  'source_url':rights.get('source_url'),
+                  'license_evidence':rights.get('license_evidence'),
+                  'author':rights.get('author'),'license_name':rights.get('license_name'),
+                  'attribution':rights.get('attribution'),
+                  'metadata_incomplete':[key for key in
+                      ('source_url','author','license_name','attribution','license_evidence')
+                      if not rights.get(key)],
+                  'human_scene_relevance_and_commercial_rights_review_required':True}
+    if chosen.get('smart_crop') and not rights_trace['metadata_incomplete']:
+        rights_trace.update(smart_media.rights_record(rights,src,rights_trace['source_sha256']))
     return {'kind':chosen['kind'],'asset':name,
-        'focus_trace':focus,
-        'rights_trace':smart_media.rights_record(
-            {'media_path':chosen['media_path'],**chosen.get('rights',{})},
-            src,qa_engine.digest(src)) if chosen.get('smart_crop') else None}
+        'focus_trace':focus,'rights_trace':rights_trace}
 
 def isolated_remotion_site(template:Path, job_output:Path)->Path:
     """Private Remotion public/assets and JS source per output; share installed dependencies only."""
