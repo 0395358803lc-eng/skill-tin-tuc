@@ -118,7 +118,8 @@ def retrieve(url: str, retries: int = 2) -> bytes:
     raise RuntimeError("RSS inaccessible: " + str(last))
 
 def parse_feed(raw: bytes, feed_name: str, source_url: str, now: dt.datetime, hours: int):
-    if len(raw) > MAX_BYTES or re.search(br'<!\\s*(?:DOCTYPE|ENTITY)',raw,re.I):
+    unsafe_header=raw.upper()
+    if len(raw) > MAX_BYTES or b"<!DOCTYPE" in unsafe_header or b"<!ENTITY" in unsafe_header:
         raise ValueError("RSS unsafe XML declaration or oversized payload")
     root = ET.fromstring(raw)
     is_atom = root.tag.endswith('feed')
