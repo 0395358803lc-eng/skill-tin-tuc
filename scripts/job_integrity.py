@@ -196,7 +196,10 @@ def recovery_plan(job:pathlib.Path)->dict:
     lock=inspect_lock(j)
     exists=lambda name:(j/name).is_file()
     attempts=sorted(x.name for x in j.glob('attempt-*') if x.is_dir())
-    interrupted=bool(attempts and not exists('render_result.json'))
+    # A process may fail before creating attempt-01; the checkpoint still records
+    # the render attempt. Never silently replay this possibly side-effectful action.
+    attempt_recorded=ck.get('checkpoint_event')=='RENDER_ATTEMPT'
+    interrupted=bool(not exists('render_result.json') and (attempts or attempt_recorded))
     if interrupted:stage='INTERRUPTED_RENDER_INSPECTION'
     elif exists('handoff.json'):stage='AWAITING_HUMAN_FINAL_REVIEW'
     elif exists('technical_qa.json'):stage='INSPECT_QA'
@@ -209,6 +212,7 @@ def recovery_plan(job:pathlib.Path)->dict:
     else:stage='DISCOVER'
     return {'job':str(j),'checkpoint':ck,'lock':lock,'suggested_stage':stage,
         'pending_render_attempt_directories':attempts if interrupted else [],
+        'render_attempt_recorded_without_output':bool(attempt_recorded and not attempts and interrupted),
         'safe_to_mutate':ck['status']=='VERIFIED' and lock['status']=='UNLOCKED' and not interrupted,
         'requires_human_approval':stage=='AWAITING_USER_SCRIPT_APPROVAL',
         'never_auto_approve_or_republish':True}

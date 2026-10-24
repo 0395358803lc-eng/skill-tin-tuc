@@ -15,6 +15,7 @@ ALLOWED_CONFIDENCE = {'high', 'medium', 'low', 'unknown'}
 TWO_LABEL_SUFFIXES = {'co.uk', 'org.uk', 'ac.uk', 'com.au', 'com.br', 'co.jp', 'com.vn',
                       'co.kr', 'com.cn', 'com.mx', 'co.nz', 'com.sg', 'com.my'}
 HIGH_RISK = {'politics', 'health', 'economy'}
+MAX_VISUAL_SCENES = 20
 def timestamp(value: str, name: str) -> dt.datetime:
     if not isinstance(value, str) or not value.strip():
         raise ValueError(name + ' must be nonempty ISO-8601 datetime')
@@ -269,8 +270,8 @@ def draft_manifest(bundle: dict, selection: dict, scripts: dict) -> dict:
             'type': 'news_card', 'instruction': 'Original news card; do not invent documentary footage',
             'claim_ids': used, 'media_status': 'original_graphics'
         }]
-        if not isinstance(visual_plan, list) or not 1 <= len(visual_plan) <= 20:
-            raise ValueError('visual_plan must have 1..20 scenes: ' + sid)
+        if not isinstance(visual_plan, list) or not 1 <= len(visual_plan) <= MAX_VISUAL_SCENES:
+            raise ValueError(f'visual_plan must have 1..{MAX_VISUAL_SCENES} scenes: ' + sid)
         for scene in visual_plan:
             if not isinstance(scene, dict) or scene.get('type') not in (
                 'news_card', 'licensed_image', 'licensed_broll', 'infographic'):
@@ -303,6 +304,28 @@ def draft_manifest(bundle: dict, selection: dict, scripts: dict) -> dict:
             'stories': prepared,
             'user_selection_message': selection['user_selection_message'],
             'editorial_review_required': True}
+    # Local audio assets are bound to the exact user-approved draft fingerprint.
+    for prefix in ('music', 'pronunciation_lexicon'):
+        path_key, hash_key = prefix + '_path', prefix + '_sha256'
+        path_value, sha_value = scripts.get(path_key), scripts.get(hash_key)
+        if path_value is not None or sha_value is not None:
+            if (not isinstance(path_value, str) or not path_value.strip()
+                    or not isinstance(sha_value, str)
+                    or not re.fullmatch(r'[0-9a-fA-F]{64}', sha_value)):
+                raise ValueError(prefix + ' needs a relative path and SHA-256 before approval')
+            asset = Path(path_value)
+            if asset.is_absolute() or '..' in asset.parts or asset == Path('.'):
+                raise ValueError(prefix + ' must use a safe relative file path')
+            if prefix == 'pronunciation_lexicon' and asset.suffix.lower() != '.json':
+                raise ValueError('pronunciation lexicon must be JSON')
+            manifest[path_key] = path_value
+            manifest[hash_key] = sha_value.lower()
+    if 'music_path' in manifest:
+        if not text(scripts.get('music_license')):
+            raise ValueError('background music requires explicit license evidence')
+        manifest['music_license'] = scripts['music_license']
+    elif scripts.get('music_license'):
+        raise ValueError('music_license without approved music file')
     studio_design.validate(manifest) # Preset is included in the user's SHA256 approved script.
     return manifest
 
@@ -317,6 +340,8 @@ def approve_draft(draft: dict, confirmation: dict) -> dict:
     timestamp(confirmation.get('confirmed_at'), 'confirmed_at')
     if not text(confirmation.get('user_confirmation')):
         raise ValueError('human approval message required')
+    if text(confirmation.get('user_confirmation')) == text(draft.get('user_selection_message')):
+        raise ValueError('script approval must be a distinct user decision from story selection')
     if confirmation.get('script_sha256') != canonical_hash(draft):
         raise ValueError('script changed since review; approval no longer valid')
     story_ids = [s['id'] for s in draft['stories']]
