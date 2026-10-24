@@ -87,7 +87,7 @@ def download(url: str) -> tuple[str, str]:
     if not parser.can_fetch(AGENT, final_url):
         raise ValueError("robots.txt forbids redirected article URL")
     charset = "utf-8"
-    marker = re.search(r"charset\\s*=\\s*['\\\"]?([a-zA-Z0-9_-]+)", reply_type, re.I)
+    marker = re.search(r'charset\s*=\s*["\x27]?([a-zA-Z0-9_-]+)', reply_type, re.I)
     if marker:
         charset = marker.group(1)
     try:
