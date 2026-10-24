@@ -40,3 +40,8 @@ Thay đường dẫn bằng vị trí thực tế trên máy đích; runtime ph�
 - Chỉ thông báo GA khi có bằng chứng cài mới + chạy video/QA trên một Windows PC/VM độc lập và hoàn tất kiểm duyệt cuối.
 
 **Đây là bản nguồn portable sạch v1.0.0-rc.2, không kèm dependencies và chưa được chứng nhận GA.**
+
+## Đợt 2 — Hardening workflow 07–12
+Đã đồng bộ visual_plan tối đa 20 cảnh giữa editor và renderer; bổ sung phê duyệt SHA-256 cho nhạc nền/từ điển phát âm, kiểm tra file thật tại lúc tạo draft và trước render. Workflow chặn replay sau crash, ghi checkpoint khi commit render, tránh retry CPU khi lỗi bản quyền hoặc dữ liệu. Người dùng vẫn chọn tin và duyệt bản script chính xác, không auto-post. Xem `references/STAGE2_WORKFLOW_CONTRACT.md` và kiểm thử `tests/test_stage2_workflow.py`.
+
+Bộ mã nguồn vẫn **v1.0.0-rc.2**, GA cần nghiệm thu Windows độc lập; CI nguồn không có model Piper và không chứng nhận chất lượng video thực tế.
