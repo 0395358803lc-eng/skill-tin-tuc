@@ -51,3 +51,6 @@ Bộ thu thập RSS đã bổ sung validation market/category/window, giới h�
 
 ## Đợt 4 — Nâng cấp video/âm thanh (18–25)
 Mã nguồn đã thêm lựa chọn model Piper cục bộ, nhịp dừng theo dấu câu, tùy chọn căn chỉnh từ qua một aligner offline do người dùng cung cấp, audio ducking/peak limiting, Smart Crop có nhiều khuôn mặt, dấu vết media/rights theo shot, hiệu ứng chuyển shot và workspace Remotion riêng cho từng job. Xem `references/STAGE4_AV_QUALITY_CONTRACT.md` và `tests/test_stage4_av.py`. Không tự tải model AI, không API phân tích ngoài, không tự đăng; GitHub CI không thay thế nghiệm thu nghe nhìn trên Windows. Vẫn là v1.0.0-rc.2.
+
+## Đợt 5 — Kiểm thử QA và hiệu năng (26–29)
+Bổ sung `scripts/stage5_media_smoke.py` chạy GitHub CI: tám video **FFmpeg giả lập** (30/60/90/180 giây × 9:16/16:9), kiểm codec, SRT, âm thanh, khung hình, thời lượng và xuất báo cáo QA JSON. `qa_engine.py` tăng cường chặn lỗi nghiêm trọng, `stage5_perf_audit.py` chỉ xác minh benchmark có số liệu thực và `stage5_windows_acceptance.py` là công cụ kiểm thử Piper→Remotion→GPU/CPU trên Windows độc lập. Xem `references/STAGE5_QA_ACCEPTANCE.md`. Kết quả GitHub CI **không** phải video sản xuất bằng Piper/Remotion và không đủ cho GA. Giữ v1.0.0-rc.2.
