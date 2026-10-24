@@ -8,14 +8,19 @@
   "automatic_publication": false,
   "manifest_self_hash_excluded": true,
   "hash_algorithm": "SHA-256",
-  "total_files": 84,
-  "total_bytes": 754531,
-  "content_set_sha256": "7bb8eb95444f2a5a0d570f6f99ce6dc7f0a4dcd82935e0ce5d5dcaa788c18fa3",
+  "total_files": 85,
+  "total_bytes": 756221,
+  "content_set_sha256": "d0bada947f7521cab849472d263980e68557af9b848adc7494d524c6cc8f9f8b",
   "files": [
     {
+      "path": ".github/workflows/source-checks.yml",
+      "bytes": 1503,
+      "sha256": "0d545a724fb3beccbf21c34ec159c15ba43cbb75e728e55aab497d541e2cc5e7"
+    },
+    {
       "path": ".gitignore",
-      "bytes": 58,
-      "sha256": "090a22172938a1d7be5005f0644318754f08b2b1d62acfdee639271a18da797b"
+      "bytes": 228,
+      "sha256": "33eceeee48cbf6b5f91e2e8316a7f8fcb2e7eb4fea9027fb521f7d4c07f795e7"
     },
     {
       "path": "examples/demo_brief.json",
@@ -234,8 +239,8 @@
     },
     {
       "path": "scripts/release_manifest.py",
-      "bytes": 8978,
-      "sha256": "cc43572a97a4f6583ad9b88ff2dc78ecd52442d15fb1e9ae03a44126b8618e38"
+      "bytes": 8995,
+      "sha256": "2039ec5545b872e7f5428526ec4a3de0b114fd076806b49c306f153e7bc174f8"
     },
     {
       "path": "scripts/render_video.py",
