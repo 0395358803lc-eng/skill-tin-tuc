@@ -12,6 +12,7 @@ import urllib.request
 import urllib.robotparser
 from html.parser import HTMLParser
 from pathlib import Path
+import safe_http
 
 MAX_HTTP_BYTES = 1_500_000
 AGENT = 'AI-News-Video-Skill/0.3 (editorial-research; respects robots.txt)'
@@ -61,53 +62,42 @@ class PublicArticle(HTMLParser):
             self.headings.append(value)
 
 def public_https(url: str) -> str:
-    parsed = urllib.parse.urlparse(url)
-    if parsed.scheme != 'https' or not parsed.hostname or parsed.username or parsed.password:
-        raise ValueError('HTTPS public article URL required')
-    host = parsed.hostname
-    try:
-        results = socket.getaddrinfo(host, parsed.port or 443, type=socket.SOCK_STREAM)
-    except socket.gaierror as error:
-        raise ValueError('host could not be resolved: ' + str(error)) from error
-    ips = [ipaddress.ip_address(item[4][0]) for item in results]
-    if not ips or any(not x.is_global for x in ips):
-        raise ValueError('URL resolves to non-public IP address')
+    """Validate syntax early; actual connection enforces pinned public DNS."""
+    safe_http.url_parts(url)
     return url
-
-class LimitedRedirect(urllib.request.HTTPRedirectHandler):
-    def redirect_request(self, req, fp, code, msg, headers, newurl):
-        public_https(newurl)
-        return super().redirect_request(req, fp, code, msg, headers, newurl)
 
 def download(url: str) -> tuple[str, str]:
     public_https(url)
+    parsed = urllib.parse.urlsplit(url)
+    robots = urllib.parse.urlunsplit(("https", parsed.netloc, "/robots.txt", "", ""))
+    # A source remains unreviewed whenever robots cannot be established.
+    raw_robots, final_robots, content_type, _ = safe_http.get(robots, 250_000, timeout=10)
+    if urllib.parse.urlsplit(final_robots).hostname != parsed.hostname:
+        raise ValueError("robots policy redirected to another origin")
+    if "text/plain" not in content_type.lower() and "text/" not in content_type.lower():
+        raise ValueError("robots policy is not text")
     parser = urllib.robotparser.RobotFileParser()
-    parsed = urllib.parse.urlparse(url)
-    robots = f'{parsed.scheme}://{parsed.netloc}/robots.txt'
-    opener = urllib.request.build_opener(LimitedRedirect())
+    parser.parse(raw_robots.decode("utf-8", errors="replace").splitlines())
+    if not parser.can_fetch(AGENT, url):
+        raise ValueError("robots.txt forbids automated retrieval")
+    data, final_url, reply_type, _ = safe_http.get(url, MAX_HTTP_BYTES, timeout=20)
+    if "text/html" not in reply_type.lower():
+        raise ValueError("source is not HTML")
+    # When a redirect changes the path, verify robots against the final URL too.
+    if not parser.can_fetch(AGENT, final_url):
+        raise ValueError("robots.txt forbids redirected article URL")
+    charset = "utf-8"
+    marker = re.search(r'charset\s*=\s*["\x27]?([a-zA-Z0-9_-]+)', reply_type, re.I)
+    if marker:
+        charset = marker.group(1)
     try:
-        with opener.open(urllib.request.Request(robots, headers={'User-Agent': AGENT}), timeout=10) as response:
-            raw_robots = response.read(250001)
-            if len(raw_robots) > 250000:
-                raise ValueError('robots.txt exceeds security limit')
-            parser.parse(raw_robots.decode('utf-8', errors='replace').splitlines())
-        if not parser.can_fetch(AGENT, url):
-            raise ValueError('robots.txt forbids automated retrieval')
-    except ValueError:
-        raise
-    except Exception as error:
-        raise ValueError('cannot verify robots policy: ' + str(error)) from error
-    with opener.open(urllib.request.Request(url, headers={'User-Agent': AGENT}), timeout=20) as resp:
-        content_type = resp.headers.get('Content-Type', '').lower()
-        if 'text/html' not in content_type:
-            raise ValueError('source is not HTML')
-        data = resp.read(MAX_HTTP_BYTES + 1)
-        if len(data) > MAX_HTTP_BYTES:
-            raise ValueError('document larger than source reader budget')
-        charset = resp.headers.get_content_charset() or 'utf-8'
-        return data.decode(charset, errors='replace'), resp.url
+        return data.decode(charset, errors="replace"), final_url
+    except LookupError as exc:
+        raise ValueError("unsupported article text encoding") from exc
 
 def read(url: str, max_chars: int = 24000) -> dict:
+    if not 1000 <= max_chars <= 50000:
+        raise ValueError("article text budget must be 1000..50000")
     content, final_url = download(url)
     parser = PublicArticle()
     parser.feed(content)

@@ -14,6 +14,7 @@ import xml.etree.ElementTree as ET
 from email.utils import parsedate_to_datetime
 from pathlib import Path
 from difflib import SequenceMatcher
+import safe_http
 
 COUNTRIES = {
     'US': ('en-US', 'en'), 'GB': ('en-GB', 'en'), 'VN': ('vi', 'vi'),
@@ -66,6 +67,11 @@ def similar(a: str, b: str) -> bool:
         return False
     if x == y:
         return True
+    # Different quoted measurements identify potentially different news events.
+    numbers_x=set(re.findall(r'\d+(?:[.,]\d+)?%?', main_title(a)))
+    numbers_y=set(re.findall(r'\d+(?:[.,]\d+)?%?', main_title(b)))
+    if numbers_x != numbers_y:
+        return False
     tokx, toky = set(x.split()), set(y.split())
     overlap = len(tokx & toky) / max(1, min(len(tokx), len(toky)))
     return overlap >= 0.82 and SequenceMatcher(None, x, y).ratio() >= 0.62
@@ -75,8 +81,12 @@ def rss_url(country: str, category: str, hours: int, query: str = '') -> str:
         raise ValueError('Unsupported country/category')
     language, short = COUNTRIES[country]
     region = 'US' if country == 'WORLD' else country
+    if not isinstance(query,str) or len(query)>120 or any(ord(c)<32 for c in query):
+        raise ValueError("news query must be plain text <=120 characters")
     terms = query.strip() or CATEGORIES[category]
     # Google News edition is a DISCOVERY market, not the event's verified location.
+    # Country is RSS market scope. Country-specific event location is NOT
+    # established until the original reporting is read.
     if country != 'WORLD' and not query.strip():
         terms += ' ' + country
     params = {'q': terms + ' when:' + str(max(1, (hours + 23) // 24)) + 'd',
@@ -84,25 +94,33 @@ def rss_url(country: str, category: str, hours: int, query: str = '') -> str:
     return 'https://news.google.com/rss/search?' + urllib.parse.urlencode(params)
 
 def retrieve(url: str, retries: int = 2) -> bytes:
-    parsed = urllib.parse.urlparse(url)
-    if parsed.scheme != 'https' or not parsed.netloc:
-        raise ValueError('RSS requires HTTPS URL')
+    """Fetch only public HTTPS feeds; never follow redirects to a different host."""
+    safe_http.url_parts(url)
+    if not 0 <= retries <= 3:
+        raise ValueError("RSS retry count must be 0..3")
     last = None
     for attempt in range(retries + 1):
         try:
-            request = urllib.request.Request(url, headers={'User-Agent': AGENT, 'Accept': 'application/rss+xml, application/xml, text/xml'})
-            with urllib.request.urlopen(request, timeout=15) as response:
-                data = response.read(MAX_BYTES + 1)
-            if len(data) > MAX_BYTES:
-                raise ValueError('RSS feed too large')
+            data, _final, reply_type, _code = safe_http.get(url, MAX_BYTES, timeout=15)
+            if not any(kind in reply_type.lower() for kind in
+                       ("xml", "rss", "atom", "text/plain")):
+                raise ValueError("RSS response is not an XML feed")
             return data
-        except (TimeoutError, urllib.error.URLError, OSError) as exc:
+        except ValueError as exc:
             last = exc
+            # Fail closed on policy violations; transient connection errors may
+            # retry but never bypass unsafe URL, DNS or redirect checks.
+            if any(word in str(exc).lower() for word in
+                   ("public", "private", "redirect", "budget", "oversized", "port 443")):
+                raise
             if attempt < retries:
                 time.sleep(0.4 * (2 ** attempt))
-    raise RuntimeError('RSS inaccessible: ' + str(last))
+    raise RuntimeError("RSS inaccessible: " + str(last))
 
 def parse_feed(raw: bytes, feed_name: str, source_url: str, now: dt.datetime, hours: int):
+    unsafe_header=raw.upper()
+    if len(raw) > MAX_BYTES or b"<!DOCTYPE" in unsafe_header or b"<!ENTITY" in unsafe_header:
+        raise ValueError("RSS unsafe XML declaration or oversized payload")
     root = ET.fromstring(raw)
     is_atom = root.tag.endswith('feed')
     items = root.findall('{http://www.w3.org/2005/Atom}entry') if is_atom else root.findall('./channel/item')
@@ -149,7 +167,14 @@ def deduplicate(items: list[dict]) -> list[dict]:
     # This is TITLE-level duplicate grouping, NOT reliable same-event clustering.
     groups = []
     for obj in sorted(items, key=lambda x: x['published_at'], reverse=True):
-        existing = next((g for g in groups if similar(g['headline'], obj['headline'])), None)
+        # Group only near-identical headlines about events in a tight time
+        # window; sharing a topic alone does not identify the same event.
+        try:
+            when = utc(obj['published_at'])
+        except (ValueError,KeyError,TypeError):
+            continue
+        existing = next((g for g in groups if similar(g['headline'], obj['headline'])
+                         and abs((when - utc(g['published_at'])).total_seconds()) <= 36*3600), None)
         if existing is None:
             row = dict(obj)
             row['related_articles'] = [{'headline': obj['headline'], 'source': obj['source'],
@@ -160,6 +185,14 @@ def deduplicate(items: list[dict]) -> list[dict]:
             if not any(e['rss_link'] == obj['rss_link'] for e in existing['related_articles']):
                 existing['related_articles'].append({'headline': obj['headline'], 'source': obj['source'], 'rss_link': obj['rss_link']})
                 existing['candidate_count'] += 1
+    # IDs derived solely from title/date can collide across distinct feeds.
+    # Disambiguate deterministically without claiming they are the same event.
+    seen = set()
+    for group in groups:
+        if group['id'] in seen:
+            signature = group['rss_link'] + '|' + group['published_at']
+            group['id'] = 'N-' + hashlib.sha256(signature.encode('utf-8')).hexdigest()[:16]
+        seen.add(group['id'])
     return groups
 
 def fetch(country: str, category: str, hours: int, limit: int,
@@ -170,6 +203,12 @@ def fetch(country: str, category: str, hours: int, limit: int,
         raise ValueError('hours must be 1..168 and limit 1..100')
     now = dt.datetime.now(dt.timezone.utc)
     feeds = [{'name': 'Google News ' + country, 'url': rss_url(country, category, hours, query)}] + (extra_feeds or [])
+    if len(feeds)>16:
+        raise ValueError("too many configured RSS feeds")
+    for entry in feeds:
+        if not isinstance(entry,dict) or not isinstance(entry.get('name'),str) or not entry['name'].strip():
+            raise ValueError("invalid RSS feed metadata")
+        safe_http.url_parts(entry.get('url'))
     candidates, logs = [], []
     for feed in feeds:
         name, url = str(feed['name']), str(feed['url'])

@@ -56,3 +56,6 @@ New-Item -ItemType Directory -Path $outDir -Force | Out-Null
 - Các chính sách robots/paywall và quyền dùng lại media phải được tôn trọng.
 - Tin chỉ có RSS, tin chưa đủ hai nguồn độc lập, claim chưa có chứng cứ: không xuất bản như dữ kiện chắc chắn.
 - Không tạo media nhạy cảm mô phỏng sự kiện thật để đánh lừa khán giả.
+
+## Nâng cấp Đợt 3 — Phạm vi và kết quả nguồn (v1.0.0-rc.2)
+Đọc `references/STAGE3_RESEARCH_CONTRACT.md`: RSS market không phải event_country, lọc 1..168 giờ bằng published_at, so sánh hai tin có số liệu khác nhau, giới hạn HTTP/robots và kiểm đủ nguồn độc lập theo từng claim. `safe_http.py` chỉ tải HTTPS public origin, không vượt paywall, robots hay chuyển hướng qua domain khác. `editorial_quality.py` ghi các điểm cần biên tập viên xem, tuyệt đối không tự xác nhận sự thật hoặc tự đăng video.

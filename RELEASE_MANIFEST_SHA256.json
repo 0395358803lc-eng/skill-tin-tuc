@@ -8,9 +8,9 @@
   "automatic_publication": false,
   "manifest_self_hash_excluded": true,
   "hash_algorithm": "SHA-256",
-  "total_files": 87,
-  "total_bytes": 780849,
-  "content_set_sha256": "36fe418490a3415a994c231af7015a3fe79af9106e19cf196835440e951e4a23",
+  "total_files": 91,
+  "total_bytes": 807344,
+  "content_set_sha256": "42d9fcf815d643538a1f872c7f833e6d1b240cfcc3769fc95a11ab1c34fe631b",
   "files": [
     {
       "path": ".github/workflows/source-checks.yml",
@@ -49,8 +49,8 @@
     },
     {
       "path": "README.md",
-      "bytes": 5404,
-      "sha256": "f238be6808a96bf829139e409f4cefdedf61f1291daac7c5fd8ce8cfea0fd706"
+      "bytes": 6034,
+      "sha256": "6a51206583b81dc28f4fc7b27f6d4cfc4c15ee48b2ae019772482552ac6d64a6"
     },
     {
       "path": "references/AGENT_ORCHESTRATION.md",
@@ -79,8 +79,8 @@
     },
     {
       "path": "references/NEWS_GATHERING.md",
-      "bytes": 5990,
-      "sha256": "ed72a960935df7667cd7da9429def90a950080263d2d93cfdac0e8727b2fe67b"
+      "bytes": 6588,
+      "sha256": "b7cee749e4ba11fc58f83a52205e00accffadf462bcb244f8f2bc7b72d2d6787"
     },
     {
       "path": "references/PORTABILITY_CONTRACT.md",
@@ -121,6 +121,11 @@
       "path": "references/STAGE2_WORKFLOW_CONTRACT.md",
       "bytes": 4663,
       "sha256": "4e1d6804c5fd1efbaed98d551956917690dcb56541651ec55c39db593ef88bdd"
+    },
+    {
+      "path": "references/STAGE3_RESEARCH_CONTRACT.md",
+      "bytes": 5314,
+      "sha256": "5b3b132e629d1bf696c4e38550f66774cb625a41c964dd5ab9301c493a245965"
     },
     {
       "path": "references/TRANSFER_ZIP_WINDOWS.md",
@@ -199,8 +204,13 @@
     },
     {
       "path": "scripts/editorial_core.py",
-      "bytes": 20533,
-      "sha256": "be48ce75fbbaaffb8579c3bfa6e8ef31a8239ad6854b2db3c50f12ead5ef4e10"
+      "bytes": 20629,
+      "sha256": "f2b3d8259b9bcb7e71b3c1a76e0b247b88608e5620b93c4046b3c10ec5d26ae1"
+    },
+    {
+      "path": "scripts/editorial_quality.py",
+      "bytes": 2599,
+      "sha256": "2af08086ab5d0c0d01c70e6e6497c341141e25bb6693d5a1c784209cdb1feb65"
     },
     {
       "path": "scripts/job_integrity.py",
@@ -219,13 +229,13 @@
     },
     {
       "path": "scripts/news_editor.py",
-      "bytes": 10458,
-      "sha256": "0fee95255818f0a7cd32c2f09a4e49e3a6cb30252a103d06ec19408632b282ba"
+      "bytes": 10494,
+      "sha256": "c7462cec01fe5de12d146effd48a6e9c14b98f4b5cb5e420f1746dba263aa300"
     },
     {
       "path": "scripts/news_rss.py",
-      "bytes": 11199,
-      "sha256": "b5d42f81c6adc5b49ac099b90b419dd2b8b6f925c4c02134f64f11b8c0c2d586"
+      "bytes": 13341,
+      "sha256": "69a49641590db8a47b9df1891085eaa69027e79b8703273059d1473825fae8db"
     },
     {
       "path": "scripts/qa_engine.py",
@@ -254,8 +264,8 @@
     },
     {
       "path": "scripts/research_enrichment.py",
-      "bytes": 12138,
-      "sha256": "f99c615867e9fc8b913de86f0a2ea144df4abca0211247a5d2655dc3829b6a9c"
+      "bytes": 13021,
+      "sha256": "976923249d785d6ef3e353b9419bbfdfde7348277e50f33a9e75d8f9cba86bbf"
     },
     {
       "path": "scripts/run_local.ps1",
@@ -273,6 +283,11 @@
       "sha256": "f1e901ddf3e6aa1fd90f69d60bce2a48cedf0c8fee9cb8a5dfee79a85f741466"
     },
     {
+      "path": "scripts/safe_http.py",
+      "bytes": 5949,
+      "sha256": "c80db0b75e9646a396c3740f8edcf74ae07dd16767253dd6dc9efbad3cf05a8c"
+    },
+    {
       "path": "scripts/setup_remotion.ps1",
       "bytes": 2033,
       "sha256": "cb6b4b9879fbce32c52561909e48f1e523793188bd5810a5e0d5aaa5b5c90d37"
@@ -284,8 +299,8 @@
     },
     {
       "path": "scripts/source_reader.py",
-      "bytes": 6302,
-      "sha256": "512c601bf7985f633f41daf60609d49af304f28ad69fdf3d6f9a97c6188a4b34"
+      "bytes": 5801,
+      "sha256": "e50b1fa82937c308297c88eed9ea0ad9393b455c3ca8ada47d6fedf521af1040"
     },
     {
       "path": "scripts/stage15_acceptance.py",
@@ -354,13 +369,13 @@
     },
     {
       "path": "scripts/workflow.py",
-      "bytes": 34472,
-      "sha256": "857125cc97a3749c868e71e045a32676053e47e00dc7b3a777c632b8c46e6fc9"
+      "bytes": 34499,
+      "sha256": "4581349b79c38cedf2c2cbead55da393c16d75f658e456f319c52893f5aba6fe"
     },
     {
       "path": "SKILL.md",
-      "bytes": 21241,
-      "sha256": "983884dc9d6b5e975f4120e09bc7bf942c56e823bc4459fc07e51791d9cac11a"
+      "bytes": 21283,
+      "sha256": "a8c638d70ffe6cfb90fb62d3ce5927fcb47c16cf951dcdd78e2fb931be89124b"
     },
     {
       "path": "tests/test_duration_planner.py",
@@ -421,6 +436,11 @@
       "path": "tests/test_stage3_agent_bridge.py",
       "bytes": 12273,
       "sha256": "34f1406bd8ee7b45a89ed2a4773b8644095f58f9a62fec40aa24ac9cabff27fb"
+    },
+    {
+      "path": "tests/test_stage3_research.py",
+      "bytes": 8680,
+      "sha256": "b6284914348c4ddb194ac89914fb78a305df4690e40af039a55d917ea9b33a55"
     },
     {
       "path": "tests/test_stage4.py",
