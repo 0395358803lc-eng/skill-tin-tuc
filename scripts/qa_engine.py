@@ -54,6 +54,8 @@ def verify_srt(path:Path,seconds:float)->dict:
     raw=path.read_text(encoding="utf-8-sig")
     blocks=[x.strip() for x in re.split(r"\r?\n\s*\r?\n",raw.strip()) if x.strip()]
     if not blocks:raise ValueError("SRT has no cues")
+    if chr(0) in raw or chr(0xfffd) in raw:
+        raise ValueError("SRT contains corrupted or replacement characters")
     previous=0.
     covered=0.
     longest_chars=0
@@ -130,6 +132,35 @@ def previews(path:Path,duration:float,out_dir:Path,props_path:Path|None=None)->l
                         "near_black":mean<8 and dynamic<20})
     return outputs
 
+def inspect_caption_and_layout(props:dict,aspect:str)->list[dict]:
+    """Static layout RISK only: real pixel overflow requires rendered screenshot review."""
+    if not isinstance(props,dict) or aspect not in RATIOS:
+        raise ValueError("invalid Remotion props/aspect")
+    issues=[]
+    stories=props.get("stories",[])
+    cues=props.get("cues",[])
+    if not isinstance(stories,list) or not isinstance(cues,list):
+        raise ValueError("invalid Remotion story/cue arrays")
+    for i,story in enumerate(stories,1):
+        if not isinstance(story,dict):
+            raise ValueError("invalid Remotion story")
+        headline,summary=str(story.get("headline","")),str(story.get("summary",""))
+        if len(headline)>235 or len(summary)>460:
+            issues.append({"code":"UNAPPROVED_TEXT_EXCEEDS_SAFE_CONTRACT","severity":"ERROR","story":i})
+        elif len(headline)>115 or len(summary)>260:
+            issues.append({"code":"LONG_TEXT_NEEDS_RENDERED_LAYOUT_REVIEW","severity":"WARNING","story":i})
+        if len(story.get("shots",[]))>20:
+            issues.append({"code":"SHOTS_EXCEED_APPROVED_SCENE_LIMIT","severity":"ERROR","story":i})
+    for i,cue in enumerate(cues,1):
+        if not isinstance(cue,dict):
+            raise ValueError("invalid Remotion caption cue")
+        size=len(str(cue.get("text","")))
+        if size>110:
+            issues.append({"code":"CAPTION_COPY_SEVERE_OVERFLOW_RISK","severity":"ERROR","cue":i})
+        elif size>(65 if aspect=="9:16" else 82):
+            issues.append({"code":"LONG_CAPTION_NEEDS_VISUAL_REVIEW","severity":"WARNING","cue":i})
+    return issues
+
 def analyze(folder:Path,report_path:Path,expected_aspect:str|None=None,
             frames:bool=True)->dict:
     folder=folder.resolve()
@@ -187,22 +218,37 @@ def analyze(folder:Path,report_path:Path,expected_aspect:str|None=None,
             else:
                 try:
                     caption_result=verify_srt(captions,seconds)
-                    if caption_result['caption_coverage_ratio']<.60:
+                    if caption_result['caption_coverage_ratio']<.30:
+                        errors.append('CAPTION_COVERAGE_CRITICALLY_LOW:'+aspect)
+                    elif caption_result['caption_coverage_ratio']<.60:
                         warnings.append('LOW_CAPTION_COVERAGE_REVIEW:'+aspect)
-                    if caption_result.get('longest_cue_characters',0)>(65 if aspect=='9:16' else 82):
+                    count_chars=caption_result.get('longest_cue_characters',0)
+                    if count_chars>110:
+                        errors.append('CAPTION_COPY_SEVERE_OVERFLOW_RISK:'+aspect)
+                    elif count_chars>(65 if aspect=='9:16' else 82):
                         warnings.append('STAGE18_LONG_CAPTION_SAFE_ZONE_REVIEW:'+aspect)
                 except (ValueError,OSError) as e:
                     errors.append("INVALID_SRT:"+aspect+":"+str(e));caption_result=None
             sound=audio_scan(video)
             if sound["peak_dB"] is None or sound["mean_dB"] is None or sound["mean_dB"]<-48:
                 errors.append("MUTED_OR_MISSING_AUDIO:"+aspect)
-            if sound["longest_silence_seconds"]>max(4.,seconds*.4):
+            if sound.get("peak_dB") is not None and sound["peak_dB"]>-.1:
+                warnings.append("AUDIO_PEAK_NEAR_ZERO_DB_REVIEW:"+aspect)
+            if sound.get("mean_dB") is not None and sound["mean_dB"]>-3.:
+                errors.append("UNSAFELY_LOUD_AVERAGE_AUDIO:"+aspect)
+            if sound["longest_silence_seconds"]>max(4.,seconds*.8):
+                errors.append("EXCESSIVE_AUDIO_SILENCE:"+aspect)
+            elif sound["longest_silence_seconds"]>max(4.,seconds*.4):
                 warnings.append("PROLONGED_SILENCE_REVIEW:"+aspect)
             props_path=folder/"_work"/f"props-{suffix}.json"
             sampled=previews(video,seconds,report_path.parent/(report_path.stem+"_frames")/suffix,props_path) if frames else []
-            if any(x["near_black"] for x in sampled):
+            black_count=sum(1 for x in sampled if x["near_black"])
+            if black_count>=2:
+                errors.append("MULTIPLE_NEAR_BLACK_FRAMES:"+aspect)
+            elif black_count:
                 warnings.append("POSSIBLE_BLACK_FRAME:"+aspect)
-            detail[aspect]={"video":name,"sha256":digest(video),
+            detail[aspect]={"black_frames_sampled":black_count,
+                            "video":name,"sha256":digest(video),
                             "bytes":video.stat().st_size,"duration_seconds":seconds,
                             "width":width,"height":height,"fps":30,
                             "audio":sound,"subtitles":caption_result,
@@ -273,6 +319,11 @@ def analyze(folder:Path,report_path:Path,expected_aspect:str|None=None,
                         if (props.get('visualStyle')!=visual.get('visual_style') or
                             props.get('language')!=visual.get('language')):
                             errors.append('STAGE20_PROPS_BRIEF_MISMATCH:'+ratio)
+                        for issue in inspect_caption_and_layout(props,ratio):
+                            if issue["severity"]=="ERROR":
+                                errors.append(issue["code"]+":"+ratio)
+                            else:
+                                warnings.append(issue["code"]+":"+ratio)
                     else:
                         warnings.append('STAGE20_PROPS_NOT_RETAINED_REVIEW:'+ratio)
             except (OSError,TypeError,ValueError,KeyError) as exc:
