@@ -110,3 +110,101 @@ jobs:
           assert "version: 1.0.0-rc.2" in text
           assert manifest["release_status"] == "RELEASE_CANDIDATE_NOT_GA"
           PY
+      - name: Build and verify deterministic RC source ZIP
+        working-directory: ${{ runner.temp }}/skill-source
+        env:
+          PYTHONDONTWRITEBYTECODE: "1"
+        run: |
+          mkdir -p "$RUNNER_TEMP/skill-rc"
+          python -B scripts/package_source.py build --source . --zip "$RUNNER_TEMP/skill-rc/AI-News-Video-Skill-1.0.0-rc.2-source.zip" > "$RUNNER_TEMP/skill-rc/rc_package_result.json"
+          python -B scripts/package_source.py verify --zip "$RUNNER_TEMP/skill-rc/AI-News-Video-Skill-1.0.0-rc.2-source.zip" > "$RUNNER_TEMP/skill-rc/rc_verify_result.json"
+          sha256sum "$RUNNER_TEMP/skill-rc/AI-News-Video-Skill-1.0.0-rc.2-source.zip" > "$RUNNER_TEMP/skill-rc/RC_ZIP_SHA256.txt"
+          sha256sum RELEASE_MANIFEST_SHA256.json > "$RUNNER_TEMP/skill-rc/RC_MANIFEST_SHA256.txt"
+          python -B scripts/stage6_release_gate.py --source . --report "$RUNNER_TEMP/skill-rc/rc_ga_gate.json"
+          grep 'RC_READY_WINDOWS_ACCEPTANCE_PENDING' "$RUNNER_TEMP/skill-rc/rc_ga_gate.json"
+      - name: Upload verified RC ZIP and SHA-256 (not GA)
+        uses: actions/upload-artifact@v4
+        with:
+          name: news-skill-rc-source-${{ github.run_id }}
+          path: ${{ runner.temp }}/skill-rc/*
+          if-no-files-found: error
+          retention-days: 90
+
+  windows-source-portability:
+    name: Independent Windows ZIP extraction and source verification (no Piper/GPU)
+    needs: source-validation
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - uses: actions/download-artifact@v4
+        with:
+          name: news-skill-rc-source-${{ github.run_id }}
+          path: ${{ runner.temp }}/stage6-download
+      - name: Verify ZIP integrity and fresh Windows extraction
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $archive=Join-Path $env:RUNNER_TEMP 'stage6-download/AI-News-Video-Skill-1.0.0-rc.2-source.zip'
+          $hashFile=Join-Path $env:RUNNER_TEMP 'stage6-download/RC_MANIFEST_SHA256.txt'
+          $expected=(Get-Content -LiteralPath $hashFile -Raw).Split(' ',[StringSplitOptions]::RemoveEmptyEntries)[0].Trim()
+          python -B scripts/package_source.py verify --zip $archive --expect-manifest-sha256 $expected
+          if ($LASTEXITCODE -ne 0) { throw 'ZIP SHA-256 verification failed on Windows' }
+          $fresh=Join-Path $env:RUNNER_TEMP 'stage6-clean-windows-extract'
+          if (Test-Path -LiteralPath $fresh) { throw 'Fresh Windows extraction dir already exists' }
+          Expand-Archive -LiteralPath $archive -DestinationPath $fresh
+          $skill=Join-Path $fresh 'AI-News-Video-Skill-1.0.0-rc.2'
+          python -B (Join-Path $skill 'scripts/release_manifest.py') verify --source $skill
+          if ($LASTEXITCODE -ne 0) { throw 'Windows source manifest verification failed' }
+          if (!(Test-Path (Join-Path $skill '.gitignore'))) { throw 'ZIP missing hidden .gitignore file' }
+          $runtime=Join-Path $env:RUNNER_TEMP 'stage6-external-runtime'
+          $output = & pwsh -NoProfile -ExecutionPolicy Bypass -File (Join-Path $skill 'scripts/bootstrap_windows.ps1') -Runtime $runtime -CheckOnly 2>&1
+          $preflightCode=$LASTEXITCODE
+          $outputText=($output | Out-String)
+          if ($preflightCode -notin @(0,2) -or $outputText -notmatch 'CHECK_ONLY_NO_MUTATION') { throw 'Windows read-only preflight did not report correctly' }
+          Write-Host 'WINDOWS_PORTABLE_RC_ZIP_AND_READONLY_PREFLIGHT_PASS'
+          Write-Host 'NO_PIPER_VOICE_RENDER_NO_GPU_NO_GA_CLAIM'
+          exit 0  # Mask expected -CheckOnly status 2 only AFTER validating its output
+
+  publish-rc-prerelease:
+    name: Publish verified RC prerelease (never GA)
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [source-validation, windows-source-portability]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: news-skill-rc-source-${{ github.run_id }}
+          path: ${{ runner.temp }}/rc-release
+      - name: Publish immutable v1.0.0-rc.2 prerelease only
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/rc-release"
+          tag="v1.0.0-rc.2"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            echo "Existing RC release found: refusing to overwrite its tag or assets."
+            gh release view "$tag" --json isPrerelease,tagName --jq '{tagName,isPrerelease}'
+            exit 0
+          fi
+          cat > "$RUNNER_TEMP/stage6-release-notes.md" <<'NOTES'
+          ## AI News Video Skill — v1.0.0-rc.2 (Release Candidate)
+          Source-only, clean portable Windows ZIP. This is **not v1.0.0 GA**.
+          - The ZIP is SHA-256 verified, with a source manifest and a standalone ZIP checksum.
+          - GitHub CI tests Python source and synthetic 9:16/16:9 FFmpeg media.
+          - GitHub Windows runner verifies ZIP extraction, source hashes and read-only preflight.
+          - Real Piper/Remotion/GPU rendering on an independent Windows installation and human visual/audio approval are STILL REQUIRED before any GA release.
+          - No runtime models, MP4 files, secrets, API posting or platform integration are included.
+          - Review `references/STAGE6_RELEASE_AND_WINDOWS_GATE.md` after extraction. Do not publish DEMO assets.
+          NOTES
+          gh release create "$tag"             AI-News-Video-Skill-1.0.0-rc.2-source.zip             RC_ZIP_SHA256.txt             RC_MANIFEST_SHA256.txt             rc_ga_gate.json             rc_package_result.json             rc_verify_result.json             --target "$GITHUB_SHA"             --title "AI News Video Skill v1.0.0-rc.2 — Portable source (prerelease)"             --notes-file "$RUNNER_TEMP/stage6-release-notes.md"             --prerelease --latest=false
+          gh release view "$tag" --json isPrerelease,tagName --jq '{tagName,isPrerelease}'
