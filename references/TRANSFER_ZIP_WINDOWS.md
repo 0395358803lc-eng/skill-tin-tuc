@@ -46,3 +46,9 @@ Mọi thay đổi mã nguồn sau thời điểm tạo `RELEASE_MANIFEST_SHA256.
 ## 5. Giới hạn tuyên bố
 
 `SOURCE_AUDIT_PASS` và `RELEASE_MANIFEST_PASS` kiểm chứng **tính toàn vẹn/bố cục của bộ nguồn**, không phải chứng nhận an toàn bảo mật toàn diện, bản quyền, sự thật của tin, hiệu năng/GPU, khả năng đăng video, hay nghiệm thu máy Windows độc lập. Người dùng vẫn chọn tin, phê duyệt kịch bản SHA-256, xem video cuối và tự đăng.
+
+## Đợt 6 — ZIP Release Candidate do GitHub Actions tạo tự động
+
+Ngoài cách người dùng nén thủ công ở trên, repository có `scripts/package_source.py` để đóng **chính xác nguồn đã khóa** thành `AI-News-Video-Skill-1.0.0-rc.2-source.zip`. GitHub Actions kiểm tra SHA-256, giải nén trên Windows Runner và đính kèm ZIP cùng `RC_ZIP_SHA256.txt`, `RC_MANIFEST_SHA256.txt` dưới GitHub prerelease `v1.0.0-rc.2`. ZIP không chứa thư mục `.git` hay dữ liệu runtime. Khi dùng bản tự động, không cần nén thủ công lần nữa.
+
+Mở trang Releases của GitHub, lấy ZIP có tên trên; **không nhầm** nút “Source code (zip)” GitHub tự tạo với gói đã kiểm chứng. Kiểm checksum tải về và manifest sau khi giải nén. Thực hiện theo `references/STAGE6_RELEASE_AND_WINDOWS_GATE.md`. Đây là **RC**; GA chỉ được tạo sau khi máy Windows độc lập dựng Piper+Remotion đầy đủ và người dùng nghiệm thu nội dung.
