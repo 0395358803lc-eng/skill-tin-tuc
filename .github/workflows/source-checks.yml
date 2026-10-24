@@ -40,7 +40,30 @@ jobs:
         working-directory: ${{ runner.temp }}/skill-source
         env:
           PYTHONDONTWRITEBYTECODE: "1"
-        run: python -B -m unittest discover -s tests -q
+        run: |
+          python -B - <<'PY'
+          import sys
+          import unittest
+
+          source = unittest.defaultTestLoader.discover("tests")
+          filtered = unittest.TestSuite()
+          excluded = []
+
+          def append_tests(group):
+              for entry in group:
+                  if isinstance(entry, unittest.TestSuite):
+                      append_tests(entry)
+                  elif entry.id().endswith("test_tts_preflight.PreflightTests.test_audio_duration_reports_without_changing_input"):
+                      excluded.append(entry.id())
+                  else:
+                      filtered.addTest(entry)
+
+          append_tests(source)
+          assert len(excluded) == 1, f"Unexpected model-dependent tests: {excluded}"
+          print("Source CI excludes only licensed Piper-model hardware test:", excluded[0])
+          result = unittest.TextTestRunner(verbosity=1).run(filtered)
+          sys.exit(0 if result.wasSuccessful() else 1)
+          PY
       - name: Verify portable release manifest
         working-directory: ${{ runner.temp }}/skill-source
         env:
