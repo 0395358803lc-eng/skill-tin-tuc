@@ -67,6 +67,11 @@ def similar(a: str, b: str) -> bool:
         return False
     if x == y:
         return True
+    # Different quoted measurements identify potentially different news events.
+    numbers_x=set(re.findall(r'\d+(?:[.,]\d+)?%?', main_title(a)))
+    numbers_y=set(re.findall(r'\d+(?:[.,]\d+)?%?', main_title(b)))
+    if numbers_x != numbers_y:
+        return False
     tokx, toky = set(x.split()), set(y.split())
     overlap = len(tokx & toky) / max(1, min(len(tokx), len(toky)))
     return overlap >= 0.82 and SequenceMatcher(None, x, y).ratio() >= 0.62
