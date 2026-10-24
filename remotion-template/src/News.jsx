@@ -81,7 +81,7 @@ function Infographic({media,frame,vertical,theme,lang}){
  </div>;
 }
 
-function Background({media,frame,vertical,theme,styleId,lang}){
+function Background({media,frame,vertical,theme,styleId,lang,shotOpacity=1}){
  const src=media?.asset?staticFile('assets/'+media.asset):null;
  const hasVideo=media?.kind==='video'&&src;
  const hasImage=media?.kind==='image'&&src;
@@ -89,7 +89,7 @@ function Background({media,frame,vertical,theme,styleId,lang}){
  const scale=1+clamp(frame*.00013,0,.045);
  const base={position:'absolute',inset:0,width:'100%',height:'100%',objectFit:'cover',
              transform:'scale('+scale+')',opacity:styleId==='deep_dive'?.46:.58};
- return <AbsoluteFill style={{background:'linear-gradient(132deg,'+theme.navy+','+theme.panel+')'}}>
+ return <AbsoluteFill style={{background:'linear-gradient(132deg,'+theme.navy+','+theme.panel+')',opacity:shotOpacity}}>
    {hasVideo?<OffthreadVideo muted src={src} style={base}/>:null}
    {hasImage?<Img src={src} style={base}/>:null}
    <AbsoluteFill style={{background:vertical?
@@ -107,7 +107,7 @@ function Caption({cues,frame,vertical,theme}){
  const active=cues.find(c=>seconds>=c.start&&seconds<c.end);
  if(!active)return null;
  const p=profile(vertical),long=words(active.text)>63;
- const fontSize=long?(vertical?38:36):(vertical?46:40);
+ const fontSize=words(active.text)>85?(vertical?32:30):long?(vertical?38:36):(vertical?46:40);
  const segments=Array.isArray(active.words)?active.words:[];
  return <div style={{position:'absolute',left:p.captionLeft,right:p.captionRight,bottom:p.subtitleBottom,
     textAlign:'center',pointerEvents:'none'}}>
@@ -117,7 +117,7 @@ function Caption({cues,frame,vertical,theme}){
       color:'#FAFDFF',fontWeight:800,fontSize,lineHeight:1.25,overflowWrap:'anywhere',
       textShadow:'0px 2px 3px #000',maxHeight:p.subtitleMaxHeight,overflow:'hidden'}}>
       {segments.length?segments.map((w,i)=><React.Fragment key={i}>
-        <span style={{color:seconds>=w.start&&seconds<w.end?'#64D9FF':'#FFFFFF'}}>{w.text}</span>
+        <span style={{color:seconds>=w.start&&seconds<w.end?theme.accent:'#FFFFFF'}}>{w.text}</span>
         {i<segments.length-1?' ':''}
       </React.Fragment>):active.text}
     </span>
@@ -130,6 +130,8 @@ function Story({story,index,vertical,country,category,demo,frame,theme,styleId,l
  const shots=Array.isArray(story.shots)&&story.shots.length?story.shots:[{media:story.media}];
  const n=story.durationFrames||90;
  const shotIdx=clamp(Math.floor(frame/Math.max(1,n)*shots.length),0,shots.length-1);
+ const shotStart=Math.ceil(shotIdx*n/shots.length);
+ const shotOpacity=shots.length===1?1:clamp((frame-shotStart+2)/9,0,1);
  const chosen=shots[shotIdx]?.media;
  const transition=Math.max(3,Math.min(transitionFrames||12,Math.floor(n/4)));
  const inAlpha=fade(frame,transition);
@@ -145,7 +147,7 @@ function Story({story,index,vertical,country,category,demo,frame,theme,styleId,l
  const chartSummarySize=useRightChart?clamp(sizes.summary-3,23,30):sizes.summary;
  const headingMax=useRightChart?300:(vertical?520:440);
  return <AbsoluteFill style={{opacity:Math.min(inAlpha,outAlpha)}}>
-   <Background media={chosen} frame={frame} vertical={vertical} theme={theme} styleId={styleId} lang={lang}/>
+   <Background media={chosen} frame={frame} vertical={vertical} theme={theme} styleId={styleId} lang={lang} shotOpacity={shotOpacity}/>
    <Brand vertical={vertical} theme={theme} lang={lang} styleId={styleId} frame={frame}/>
    <div style={{position:'absolute',left:p.left,top:p.contentTop,width:hWidth,maxWidth:'86%',
      color:theme.text,transform:'translateY('+((1-appear)*28)+'px)',opacity:appear}}>
