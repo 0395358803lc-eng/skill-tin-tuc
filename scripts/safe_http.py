@@ -78,6 +78,7 @@ def get(url: str, max_bytes: int, *, timeout: int = 12) -> tuple[bytes, str, str
     if not 1 <= timeout <= 25:
         raise ValueError("timeout outside allowed bounds")
     current = url
+    origin_host = url_parts(url).hostname
     visited = set()
     for _ in range(MAX_REDIRECTS + 1):
         parsed = url_parts(current)
@@ -101,7 +102,8 @@ def get(url: str, max_bytes: int, *, timeout: int = 12) -> tuple[bytes, str, str
                 if not location:
                     raise ValueError("redirect missing Location")
                 dest = urllib.parse.urljoin(current, location)
-                url_parts(dest)
+                if url_parts(dest).hostname != origin_host:
+                    raise ValueError("cross-origin redirect requires independent robots and source review")
                 current = dest.split("#", 1)[0]
                 continue
             if status != 200:
