@@ -1,0 +1,23 @@
+# Runtime/workspace files must not be committed
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+node_modules/
+_work/
+output/
+jobs/
+logs/
+deliveries/
+reports/
+*.mp4
+*.mov
+*.mkv
+*.wav
+*.mp3
+*.onnx
+*.onnx.json
+*.zip
+*.log
+.env
+.env.*
