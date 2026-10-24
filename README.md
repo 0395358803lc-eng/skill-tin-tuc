@@ -54,3 +54,6 @@ Mã nguồn đã thêm lựa chọn model Piper cục bộ, nhịp dừng theo d
 
 ## Đợt 5 — Kiểm thử QA và hiệu năng (26–29)
 Bổ sung `scripts/stage5_media_smoke.py` chạy GitHub CI: tám video **FFmpeg giả lập** (30/60/90/180 giây × 9:16/16:9), kiểm codec, SRT, âm thanh, khung hình, thời lượng và xuất báo cáo QA JSON. `qa_engine.py` tăng cường chặn lỗi nghiêm trọng, `stage5_perf_audit.py` chỉ xác minh benchmark có số liệu thực và `stage5_windows_acceptance.py` là công cụ kiểm thử Piper→Remotion→GPU/CPU trên Windows độc lập. Xem `references/STAGE5_QA_ACCEPTANCE.md`. Kết quả GitHub CI **không** phải video sản xuất bằng Piper/Remotion và không đủ cho GA. Giữ v1.0.0-rc.2.
+
+## Đợt 6 — GitHub Release Candidate ZIP sạch và nghiệm thu chuyển máy
+GitHub Actions đóng gói nguồn thành `AI-News-Video-Skill-1.0.0-rc.2-source.zip` và công bố dưới **GitHub prerelease** `v1.0.0-rc.2` sau khi vượt qua kiểm mã nguồn và Windows Runner giải nén. Các tệp `RC_ZIP_SHA256.txt`, `RC_MANIFEST_SHA256.txt`, `rc_ga_gate.json` đi kèm bản phát hành. Đọc `references/STAGE6_RELEASE_AND_WINDOWS_GATE.md` trước khi di chuyển. CI Windows chỉ chứng minh ZIP sạch và bootstrap `-CheckOnly`, không phải chứng nhận Piper/Remotion/GPU hoặc chất lượng video thật. Công việc nghiệm thu máy Windows mới và người dùng duyệt trước **v1.0.0 GA** vẫn bắt buộc.
