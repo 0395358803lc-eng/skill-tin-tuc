@@ -27,11 +27,18 @@ def center_from_rgb(image)->dict:
         found=model.detectMultiScale(gray,scaleFactor=1.13,minNeighbors=4,minSize=(20,20))
         if len(found):
             faces=sorted(found,key=lambda x:int(x[2])*int(x[3]),reverse=True)
-            x,y,w,h=[int(v) for v in faces[0]]
-            return {'focal_x':round(bounded((x+w/2)/image.width),4),
-                    'focal_y':round(bounded((y+h/2)/image.height),4),
-                    'method':'LOCAL_HAAR_FACE_DETECTION','face_count':len(found),'confidence':'MEDIUM_HEURISTIC',
-                    'subjects_in_frame':len(found)}
+            # If several faces are visible, avoid centering solely on the
+            # biggest face and cutting the rest away without a warning.
+            lead=faces[:min(4,len(faces))]
+            weights=[max(1.,float(w*h)) for _x,_y,w,h in lead]
+            total=sum(weights)
+            x=sum(((float(z[0])+float(z[2])/2)/image.width)*v for z,v in zip(lead,weights))/total
+            y=sum(((float(z[1])+float(z[3])/2)/image.height)*v for z,v in zip(lead,weights))/total
+            return {'focal_x':round(bounded(x),4),'focal_y':round(bounded(y),4),
+                    'method':'LOCAL_HAAR_FACE_WEIGHTED_CENTROID',
+                    'face_count':len(found),'confidence':'MEDIUM_HEURISTIC',
+                    'subjects_in_frame':len(found),
+                    'multiple_faces_need_manual_crop_review':len(found)>1}
     # Edge-energy weighted saliency, biased to central field.
     work=image.convert('L').resize((min(320,image.width),min(180,image.height)))
     edges=work.filter(ImageFilter.FIND_EDGES)
@@ -99,7 +106,10 @@ def video_focus(path:Path,seconds:float,samples:int=7)->dict:
             trajectory.append({'t':round(t,3),'fx':round(bounded(fx),4),
                                'fy':round(bounded(fy),4),
                                'confidence':r['confidence'],'method':r['method']})
+        uncertain=sum(1 for row in trajectory if row['confidence']=='LOW')
         return {'track':trajectory,'samples':len(trajectory),'source_duration':round(source_duration,3),
+                'low_confidence_sample_count':uncertain,
+                'crop_requires_manual_review':uncertain>0,
                 'mean_focus':{'focal_x':round(sum(x['fx'] for x in trajectory)/len(trajectory),4),
                               'focal_y':round(sum(x['fy'] for x in trajectory)/len(trajectory),4)},
                 'method':'LOCAL_FACES_EDGE_SALIENCY_TEMPORAL_SMOOTHING',

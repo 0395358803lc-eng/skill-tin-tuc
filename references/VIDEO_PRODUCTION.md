@@ -50,3 +50,6 @@ Phải có manifest approved hợp lệ, SHA-256 khớp kịch bản người d�
 
 ## v0.8.0 — Style/Infographic/Video Safe Area
 Đặt visual_style trước khi người dùng duyệt hash. Ba preset Remotion có intro/outro trong timeline, source/footer/safe-caption và infographic 0..100 gắn dữ liệu trong approved visual_plan. Trường hợp summary/headline dài hoặc chart nhiều điểm cần xem trực quan ảnh frame cả hai tỷ lệ; cảnh báo của design validator không thay người duyệt.
+
+## Chất lượng AV Đợt 4 — v1.0.0-rc.2
+Đọc `references/STAGE4_AV_QUALITY_CONTRACT.md` trước khi render. Piper chạy cục bộ; tự chọn và kiểm giọng. Từ điển phát âm/nhạc phải có SHA-256 + giấy phép trước khi phê duyệt. Phụ đề từ WAV thật, thời gian highlight từ **ước lượng** khi không có aligner local. Nếu dùng `NEWS_LOCAL_ALIGNER`, cần script/model do người dùng cung cấp trong runtime, tự kiểm toán mã chạy và kiểm nghe phụ đề. `_work/remotion-site` của mỗi render sở hữu assets riêng và không chia sẻ dữ liệu với job khác. Các media phải được người dùng chọn, xác minh claim và quyền sử dụng. QA tự động không thể thay thế nghiệm thu 9:16/16:9 thực tế; không auto-post.

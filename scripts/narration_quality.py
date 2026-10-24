@@ -43,7 +43,8 @@ def lexicon_review(original:str,lexicon:dict)->dict:
             'subtitle_uses_original_wording':True,
             'note':'Phonetic substitution is a human-reviewed instruction, not proof of correct pronunciation.'}
 
-def audit(cues:list[dict],narration_wav:Path,brief:dict,lexicon:dict|None=None)->dict:
+def audit(cues:list[dict],narration_wav:Path,brief:dict,lexicon:dict|None=None,
+          word_alignment:str='CHUNK_REAL_WAV_WORD_ESTIMATED')->dict:
     with wave.open(str(narration_wav),'rb') as w:
         seconds=w.getnframes()/w.getframerate()
         rate=w.getframerate()
@@ -65,6 +66,8 @@ def audit(cues:list[dict],narration_wav:Path,brief:dict,lexicon:dict|None=None)-
         previous=b
     original=' '.join(s['narration'] for s in brief.get('stories',[]))
     lexico=lexicon_review(original,lexicon or {})
+    if word_alignment not in ('CHUNK_REAL_WAV_WORD_ESTIMATED','LOCAL_OFFLINE_FORCED_ALIGNMENT_VALIDATED'):
+        raise ValueError('unsupported word alignment')
     status='REVIEW_REQUIRED'
     warnings=[]
     if coverage/max(.1,seconds)<.60:warnings.append('LOW_SUBTITLE_COVERAGE')
@@ -78,12 +81,13 @@ def audit(cues:list[dict],narration_wav:Path,brief:dict,lexicon:dict|None=None)-
         'target_seconds':brief['target_seconds'],'caption_cues':count,
         'approximate_word_highlights':words,
         'caption_coverage_pct':round(100*coverage/seconds,2),
-        'max_caption_characters':largest,'alignment':'CHUNK_REAL_WAV_WORD_ESTIMATED',
-        'word_forced_alignment_performed':False,'lexicon':lexico,'warnings':warnings,
+        'max_caption_characters':largest,'alignment':word_alignment,
+        'word_forced_alignment_performed':word_alignment=='LOCAL_OFFLINE_FORCED_ALIGNMENT_VALIDATED','lexicon':lexico,'warnings':warnings,
         'requires_listening_review':True,'no_script_rewrite':True}
 
-def save_audit(cues:list[dict],narration_wav:Path,brief:dict,output:Path,lexicon:dict|None=None)->dict:
+def save_audit(cues:list[dict],narration_wav:Path,brief:dict,output:Path,lexicon:dict|None=None,
+               word_alignment:str='CHUNK_REAL_WAV_WORD_ESTIMATED')->dict:
     if output.exists():raise FileExistsError('voice QA already exists')
-    result=audit(cues,narration_wav,brief,lexicon)
+    result=audit(cues,narration_wav,brief,lexicon,word_alignment)
     with output.open('x',encoding='utf-8') as f:json.dump(result,f,ensure_ascii=False,indent=2)
     return result

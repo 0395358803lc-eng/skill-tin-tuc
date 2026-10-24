@@ -49,7 +49,7 @@ class Stage18VoiceTests(unittest.TestCase):
         self.assertIn('active.words',js)
         self.assertIn('subtitleBottom',js)
         self.assertIn('p.subtitleBottom',js)
-        self.assertIn('#64D9FF',js)
+        self.assertIn('theme.accent',js) # Palette-matched word highlight across all presets
 
 class Stage19SmartMediaTests(unittest.TestCase):
     def test_image_focus_and_static_export_two_ratios(self):

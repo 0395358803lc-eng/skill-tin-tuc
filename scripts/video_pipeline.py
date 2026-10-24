@@ -17,6 +17,8 @@ import render_video as legacy
 import editorial_core as editorial
 import qa_engine
 import narration_quality
+import local_alignment
+import local_voices
 import smart_media
 import studio_design
 import runtime_tools
@@ -149,11 +151,43 @@ def prepare_media(item: dict, base: Path, public_assets: Path,
                  '-stream_loop','-1','-i',src,'-t',f'{seconds:.4f}',
                  '-vf',filt,'-an','-c:v','libx264','-preset','veryfast','-crf','24',
                  '-movflags','+faststart',public_assets/name],timeout=600)
+    rights={**chosen.get('rights',{}),'media_path':chosen['media_path']}
+    rights_trace={'media_path':chosen['media_path'],
+                  'source_sha256':qa_engine.digest(src),
+                  'source_url':rights.get('source_url'),
+                  'license_evidence':rights.get('license_evidence'),
+                  'author':rights.get('author'),'license_name':rights.get('license_name'),
+                  'attribution':rights.get('attribution'),
+                  'metadata_incomplete':[key for key in
+                      ('source_url','author','license_name','attribution','license_evidence')
+                      if not rights.get(key)],
+                  'human_scene_relevance_and_commercial_rights_review_required':True}
+    if chosen.get('smart_crop') and not rights_trace['metadata_incomplete']:
+        rights_trace.update(smart_media.rights_record(rights,src,rights_trace['source_sha256']))
     return {'kind':chosen['kind'],'asset':name,
-        'focus_trace':focus,
-        'rights_trace':smart_media.rights_record(
-            {'media_path':chosen['media_path'],**chosen.get('rights',{})},
-            src,qa_engine.digest(src)) if chosen.get('smart_crop') else None}
+        'focus_trace':focus,'rights_trace':rights_trace}
+
+def isolated_remotion_site(template:Path, job_output:Path)->Path:
+    """Private Remotion public/assets and JS source per output; share installed dependencies only."""
+    site=job_output/'_work'/'remotion-site'
+    if site.exists():
+        raise FileExistsError('private Remotion workspace already exists')
+    if not (template/'src'/'index.jsx').is_file() or not (template/'node_modules'/'remotion').is_dir():
+        raise RuntimeError('Remotion runtime not installed')
+    site.mkdir(parents=True)
+    shutil.copytree(template/'src',site/'src')
+    shutil.copy2(template/'package.json',site/'package.json')
+    (site/'public'/'assets').mkdir(parents=True)
+    modules=site/'node_modules'
+    if os.name=='nt':
+        # A Windows junction works without Developer Mode.
+        process=subprocess.run(['cmd','/c','mklink','/J',str(modules),str((template/'node_modules').resolve())],
+                               capture_output=True,text=True,timeout=30)
+        if process.returncode:
+            raise RuntimeError('private Remotion junction failed: '+process.stderr[-300:])
+    else:
+        modules.symlink_to((template/'node_modules').resolve(),target_is_directory=True)
+    return site
 
 def audio_track(brief: dict, out: Path, voice: str, demo_silence: bool):
     work=out/'_work'
@@ -204,10 +238,10 @@ def ffmpeg_master(video: Path, narration: Path, output: Path, encoder: str,
     args=['ffmpeg','-y','-hide_banner','-loglevel','error','-i',video,'-i',narration]
     if music:
         args+=['-stream_loop','-1','-i',music,
-               '-filter_complex','[1:a]volume=1.0,asplit=2[n][side];[2:a]volume=0.20[m];[m][side]sidechaincompress=threshold=0.06:ratio=6:attack=40:release=400[duck];[n][duck]amix=inputs=2:duration=first:weights=1 0.30,loudnorm=I=-16:TP=-1.5:LRA=11[a]',
+               '-filter_complex','[1:a]highpass=f=55,asplit=2[n][side];[2:a]volume=0.16,highpass=f=75[m];[m][side]sidechaincompress=threshold=0.045:ratio=7:attack=25:release=450[duck];[n][duck]amix=inputs=2:duration=first:weights=1 0.32,loudnorm=I=-16:TP=-1.5:LRA=11,alimiter=limit=0.89[a]',
                '-map','0:v:0','-map','[a]']
     else:
-        args+=['-map','0:v:0','-map','1:a:0','-af','loudnorm=I=-16:TP=-1.5:LRA=11']
+        args+=['-map','0:v:0','-map','1:a:0','-af','highpass=f=55,loudnorm=I=-16:TP=-1.5:LRA=11,alimiter=limit=0.89']
     if repeat_to_30fps:
         args+=['-vf','fps=30']  # DEMO stress only: duplicate frames, not native 30-fps motion.
     if encoder=='h264_nvenc':
@@ -256,20 +290,22 @@ def render(brief:dict, brief_file:Path, root:Path, aspect:str, voice:str,
     root.mkdir(parents=True,exist_ok=False)
     studio_design.save_preflight(brief,root/'visual_design.json')
     narration,timings,cues,frames=audio_track(brief,root,voice,silence)
+    site=isolated_remotion_site(remotion,root)
     try:
         pronunciation=(json.loads(Path(os.environ['PIPER_PRONUNCIATION_MAP']).read_text(encoding='utf-8-sig'))
              if os.environ.get('PIPER_PRONUNCIATION_MAP') else {})
     except (OSError,ValueError) as exc:
         raise ValueError('invalid approved pronunciation map') from exc
-    voice_qa=narration_quality.save_audit(cues,narration,brief,root/'voice_qa.json',pronunciation)
-    emphasized=narration_quality.enrich_cues(cues)
+    aligned,alignment_status=local_alignment.run_if_configured(cues,narration,root/'_work',runtime)
+    emphasized=aligned if aligned is not None else narration_quality.enrich_cues(cues)
+    voice_qa=narration_quality.save_audit(cues,narration,brief,root/'voice_qa.json',pronunciation,alignment_status)
     if music and not brief.get('music_license'):
         raise ValueError('background music requires explicit music_license evidence')
     output={}
     media_crop_reports={}
     for ratio in (['9:16','16:9'] if aspect=='both' else [aspect]):
         name,w,h,suffix=FORMATS[ratio]
-        assets=remotion/'public'/'assets'
+        assets=site/'public'/'assets'
         assets.mkdir(parents=True,exist_ok=True)
         scenes=[]
         media_crop_reports[ratio]=[]
@@ -319,7 +355,7 @@ def render(brief:dict, brief_file:Path, root:Path, aspect:str, voice:str,
         if sample_every>1:
             command+=['--every-nth-frame',str(sample_every)]
         command+=['--browser-executable',str(browser)]
-        log=execute(command,cwd=remotion,timeout=2400)
+        log=execute(command,cwd=site,timeout=2400)
         (root/('_work/remotion-'+suffix+'.log')).write_text(log[-8000:],encoding='utf-8')
         final=root/('DEMO_DO_NOT_PUBLISH_'+suffix+'.mp4' if brief.get('demo') else 'news_video_'+suffix+'.mp4')
         ffmpeg_master(raw,narration,final,encoder,music,repeat_to_30fps=sample_every>1)
@@ -338,10 +374,13 @@ def render(brief:dict, brief_file:Path, root:Path, aspect:str, voice:str,
             'stage20_visual_style':design['visual_style'],
             'stage20_original_brand_assets_only':True,
             'stage18_voice_qa':'voice_qa.json',
-            'stage18_word_alignment':'ESTIMATED_WITHIN_PIPER_CHUNK_NOT_FORCED',
+            'stage18_word_alignment':alignment_status,
+             'stage18_selected_voice':voice,
+             'stage18_offline_voice_selection':True,
             'stage19_smart_crop_opt_in':True,
             'remotion_frame_sampling_step':sample_every,'remotion_concurrency':concurrency,
             'motion_quality':('NATIVE_30FPS' if sample_every==1 else 'DEMO_STRESS_REPEATED_FRAMES_NOT_PRODUCTION'),
+             'remotion_assets_isolated_per_job':True,
             'source_manifest':str(brief_file),'demo':bool(brief.get('demo')),
             'duration_seconds':round(frames/FPS,2),'target_seconds':brief['target_seconds'],
             'formats':output,'Piper_TTS':not silence,'claim_and_media_review_required':True,
@@ -402,7 +441,11 @@ def main():
     if args.demo_silence and brief.get('demo') is not True:
         raise ValueError('silent demo cannot process real approved news')
     lang=brief['language'].split('-')[0]
-    voice=args.voice or ('vi_VN-vais1000-medium' if lang=='vi' else 'en_US-lessac-medium')
+    runtime_voices=Path(os.environ.get('PIPER_VOICE_DIR',
+                     str(Path(os.environ.get('NEWS_SKILL_RUNTIME',
+                     str(Path(__file__).resolve().parents[2]/
+                     (Path(__file__).resolve().parents[1].name+'-runtime'))))/'models')))
+    voice=local_voices.choose(runtime_voices,brief['language'],args.voice)
     if lang=='vi' and not voice.startswith('vi_') or lang=='en' and not voice.startswith('en_'):
         raise ValueError('voice language conflicts with script language')
     if args.music and (not args.music.is_file() or not brief.get('music_license')):

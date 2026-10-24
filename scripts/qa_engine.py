@@ -285,8 +285,14 @@ def analyze(folder:Path,report_path:Path,expected_aspect:str|None=None,
         else:
             try:
                 voice=json.loads(voice_path.read_text(encoding='utf-8-sig'))
-                if voice.get('word_forced_alignment_performed') is not False or voice.get('alignment')!='CHUNK_REAL_WAV_WORD_ESTIMATED':
+                alignment=voice.get('alignment')
+                forced=voice.get('word_forced_alignment_performed')
+                if ((alignment=='CHUNK_REAL_WAV_WORD_ESTIMATED' and forced is not False)
+                    or (alignment=='LOCAL_OFFLINE_FORCED_ALIGNMENT_VALIDATED' and forced is not True)
+                    or alignment not in ('CHUNK_REAL_WAV_WORD_ESTIMATED','LOCAL_OFFLINE_FORCED_ALIGNMENT_VALIDATED')):
                     errors.append('STAGE18_VOICE_QA_ALIGNMENT_CLAIM_INVALID')
+                if source.get('stage18_word_alignment') and source['stage18_word_alignment']!=alignment:
+                    errors.append('STAGE18_RENDER_ALIGNMENT_TRACE_MISMATCH')
                 if abs(float(voice['voice_real_wav_seconds'])-float(source['duration_seconds']))>1.5:
                     errors.append('STAGE18_VOICE_DURATION_MISMATCH')
                 for flag in voice.get('warnings',[]):warnings.append('STAGE18_REVIEW:'+str(flag))
