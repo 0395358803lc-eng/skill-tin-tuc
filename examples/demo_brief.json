@@ -1,0 +1,26 @@
+{
+  "project_name": "news-video-demo",
+  "country": "US",
+  "category": "technology",
+  "language": "vi-VN",
+  "period": "last_24h",
+  "target_seconds": 60,
+  "as_of": "2026-10-23T21:00:00+07:00",
+  "status": "approved",
+  "demo": true,
+  "video_title": "DEMO - Quy trình sản xuất video tin tức",
+  "video_description": "Dữ liệu giả lập dùng để kiểm thử video. Không phản ánh sự kiện thật.",
+  "hashtags": ["#demo", "#newsvideo"],
+  "stories": [
+    {
+      "headline": "Đây là bản trình diễn của AI News Video Skill",
+      "summary": "Hệ thống kiểm tra khả năng tạo video dọc, giọng đọc và phụ đề từ nội dung có cấu trúc.",
+      "narration": "Xin chào. Đây là bản trình diễn kỹ thuật, không phải bản tin về sự kiện có thật. Khi sử dụng thực tế, AI sẽ tìm nhiều nguồn, kiểm chứng thông tin và trình danh sách để người dùng duyệt. Sau đó hệ thống mới tạo giọng đọc và video có phụ đề.",
+      "approved": true,
+      "sources": [
+        {"title": "Nguồn minh họa A", "url": "https://example.com/sample-a", "published_at": "2026-10-23T10:00:00+00:00"},
+        {"title": "Nguồn minh họa B", "url": "https://example.org/sample-b", "published_at": "2026-10-23T10:00:00+00:00"}
+      ]
+    }
+  ]
+}

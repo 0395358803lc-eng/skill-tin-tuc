@@ -1,0 +1,53 @@
+{
+  "demo": true,
+  "as_of": "2026-10-23T18:00:00Z",
+  "stories": [
+    {
+      "id": "DEMO-EVENT-001",
+      "headline": "Sự kiện giả lập nhằm kiểm thử quy trình",
+      "summary": "Không phải tin có thật và tuyệt đối không phát hành.",
+      "event_country": "US",
+      "event_at": "2026-10-23T17:00:00Z",
+      "category": "technology",
+      "confidence": "high",
+      "confidence_rationale": "Tình huống giả lập có hai hồ sơ nguồn để kiểm thử kiểm soát, không phải xác nhận sự thật.",
+      "impact_score": 3,
+      "video_fit_score": 4,
+      "contradictions_unresolved": false,
+      "sources": [
+        {
+          "id": "SRC-A",
+          "url": "https://example.com/demo-article",
+          "publisher": "DEMO Publisher A",
+          "origin_id": "demo-origin-a",
+          "source_type": "primary",
+          "read_confirmed": true,
+          "published_at": "2026-10-23T17:30:00Z",
+          "retrieved_at": "2026-10-23T18:00:00Z",
+          "evidence_note": "Dữ liệu giả lập được tạo cho kiểm thử tự động, không dựa trên báo thật."
+        },
+        {
+          "id": "SRC-B",
+          "url": "https://example.org/demo-article",
+          "publisher": "DEMO Publisher B",
+          "origin_id": "demo-origin-b",
+          "source_type": "secondary",
+          "read_confirmed": true,
+          "published_at": "2026-10-23T17:35:00Z",
+          "retrieved_at": "2026-10-23T18:00:00Z",
+          "evidence_note": "Nguồn thứ hai hoàn toàn giả lập, không được xem là bằng chứng."
+        }
+      ],
+      "claims": [
+        {
+          "id": "C1",
+          "text": "Ví dụ giả lập về một sự kiện không có thật",
+          "source_ids": [
+            "SRC-A",
+            "SRC-B"
+          ]
+        }
+      ]
+    }
+  ]
+}

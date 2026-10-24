@@ -1,0 +1,38 @@
+[
+  {
+    "name": "BBC World (global discovery)",
+    "url": "https://feeds.bbci.co.uk/news/world/rss.xml",
+    "country": "WORLD",
+    "category": "general"
+  },
+  {
+    "name": "NPR News (US discovery)",
+    "url": "https://feeds.npr.org/1001/rss.xml",
+    "country": "US",
+    "category": "general"
+  },
+  {
+    "name": "NASA News (primary science source)",
+    "url": "https://www.nasa.gov/feed/",
+    "country": "WORLD",
+    "category": "science"
+  },
+  {
+    "name": "The Verge technology feed (discovery only)",
+    "url": "https://www.theverge.com/rss/tech/index.xml",
+    "country": "US",
+    "category": "technology"
+  },
+  {
+    "name": "Ars Technica technology feed (discovery only)",
+    "url": "https://feeds.arstechnica.com/arstechnica/index",
+    "country": "US",
+    "category": "technology"
+  },
+  {
+    "name": "TechCrunch technology feed (discovery only; use with attribution and link)",
+    "url": "https://techcrunch.com/feed/",
+    "country": "US",
+    "category": "technology"
+  }
+]

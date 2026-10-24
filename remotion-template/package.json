@@ -1,0 +1,14 @@
+{
+  "name": "ai-news-video-remotion",
+  "version": "1.0.0-rc.2",
+  "private": true,
+  "scripts": {
+    "render": "remotion render src/index.jsx"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.538",
+    "remotion": "4.0.538",
+    "react": "19.2.0",
+    "react-dom": "19.2.0"
+  }
+}

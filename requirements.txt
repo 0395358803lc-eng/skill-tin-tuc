@@ -1,0 +1,6 @@
+Pillow>=10,<13
+numpy>=2,<3
+piper-tts>=1.8,<2
+psutil>=5.9,<8
+# FFmpeg/ffprobe: external binaries, require subtitles (libass) filter
+# Piper voice models are distributed separately; verify each model license.

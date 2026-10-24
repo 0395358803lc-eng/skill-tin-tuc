@@ -1,0 +1,25 @@
+{
+  "project_name": "DEMO-NOT-FOR-PUBLICATION",
+  "country": "US",
+  "category": "technology",
+  "language": "vi-VN",
+  "aspect_ratio": "both",
+  "target_seconds": 60,
+  "period": "last_24h",
+  "video_title": "DEMO — Không phải tin thật",
+  "video_description": "Mô phỏng",
+  "hashtags": [
+    "#DEMO"
+  ],
+  "stories": [
+    {
+      "id": "DEMO-EVENT-001",
+      "headline": "Đây chỉ là minh họa quy trình",
+      "summary": "Không có sự kiện thật.",
+      "narration": "Xin chào. Đây chỉ là một kịch bản giả lập để kiểm tra quy trình, không phải tin tức thật.",
+      "claim_ids": [
+        "C1"
+      ]
+    }
+  ]
+}

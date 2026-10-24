@@ -1,0 +1,3 @@
+# Optional resource sampling for Stage 15 tests (not needed for everyday Skill use)
+-r requirements.txt
+psutil>=7,<8
