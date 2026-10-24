@@ -17,6 +17,8 @@ import render_video as legacy
 import editorial_core as editorial
 import qa_engine
 import narration_quality
+import local_alignment
+import local_voices
 import smart_media
 import studio_design
 import runtime_tools
@@ -277,15 +279,16 @@ def render(brief:dict, brief_file:Path, root:Path, aspect:str, voice:str,
         raise ValueError('REMOTION_CONCURRENCY must be 1..4')
     root.mkdir(parents=True,exist_ok=False)
     studio_design.save_preflight(brief,root/'visual_design.json')
-    site=isolated_remotion_site(remotion,root)
     narration,timings,cues,frames=audio_track(brief,root,voice,silence)
+    site=isolated_remotion_site(remotion,root)
     try:
         pronunciation=(json.loads(Path(os.environ['PIPER_PRONUNCIATION_MAP']).read_text(encoding='utf-8-sig'))
              if os.environ.get('PIPER_PRONUNCIATION_MAP') else {})
     except (OSError,ValueError) as exc:
         raise ValueError('invalid approved pronunciation map') from exc
-    voice_qa=narration_quality.save_audit(cues,narration,brief,root/'voice_qa.json',pronunciation)
-    emphasized=narration_quality.enrich_cues(cues)
+    aligned,alignment_status=local_alignment.run_if_configured(cues,narration,root/'_work',runtime)
+    emphasized=aligned if aligned is not None else narration_quality.enrich_cues(cues)
+    voice_qa=narration_quality.save_audit(cues,narration,brief,root/'voice_qa.json',pronunciation,alignment_status)
     if music and not brief.get('music_license'):
         raise ValueError('background music requires explicit music_license evidence')
     output={}
@@ -361,7 +364,9 @@ def render(brief:dict, brief_file:Path, root:Path, aspect:str, voice:str,
             'stage20_visual_style':design['visual_style'],
             'stage20_original_brand_assets_only':True,
             'stage18_voice_qa':'voice_qa.json',
-            'stage18_word_alignment':'ESTIMATED_WITHIN_PIPER_CHUNK_NOT_FORCED',
+            'stage18_word_alignment':alignment_status,
+             'stage18_selected_voice':voice,
+             'stage18_offline_voice_selection':True,
             'stage19_smart_crop_opt_in':True,
             'remotion_frame_sampling_step':sample_every,'remotion_concurrency':concurrency,
             'motion_quality':('NATIVE_30FPS' if sample_every==1 else 'DEMO_STRESS_REPEATED_FRAMES_NOT_PRODUCTION'),
@@ -426,7 +431,11 @@ def main():
     if args.demo_silence and brief.get('demo') is not True:
         raise ValueError('silent demo cannot process real approved news')
     lang=brief['language'].split('-')[0]
-    voice=args.voice or ('vi_VN-vais1000-medium' if lang=='vi' else 'en_US-lessac-medium')
+    runtime_voices=Path(os.environ.get('PIPER_VOICE_DIR',
+                     str(Path(os.environ.get('NEWS_SKILL_RUNTIME',
+                     str(Path(__file__).resolve().parents[2]/
+                     (Path(__file__).resolve().parents[1].name+'-runtime'))))/'models')))
+    voice=local_voices.choose(runtime_voices,brief['language'],args.voice)
     if lang=='vi' and not voice.startswith('vi_') or lang=='en' and not voice.startswith('en_'):
         raise ValueError('voice language conflicts with script language')
     if args.music and (not args.music.is_file() or not brief.get('music_license')):
