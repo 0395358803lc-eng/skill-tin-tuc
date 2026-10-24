@@ -236,11 +236,14 @@ def render(brief:dict, brief_file:Path, root:Path, aspect:str, voice:str,
            allow_longer:bool=False, sample_every:int=1) -> dict:
     if sample_every>1 and brief.get('demo') is not True:
         raise ValueError('frame sampling is forbidden for real approved news videos')
-    if music is not None:
-        approved_audio_asset(brief,brief_file.parent,'music',music)
+    music=approved_audio_asset(brief,brief_file.parent,'music',music)
     chosen_lexicon=os.environ.get('PIPER_PRONUNCIATION_MAP')
-    approved_audio_asset(brief,brief_file.parent,'pronunciation_lexicon',
+    approved_lexicon=approved_audio_asset(brief,brief_file.parent,'pronunciation_lexicon',
                          Path(chosen_lexicon) if chosen_lexicon else None)
+    if approved_lexicon:
+        os.environ['PIPER_PRONUNCIATION_MAP']=str(approved_lexicon)
+    else:
+        os.environ.pop('PIPER_PRONUNCIATION_MAP',None)
     design=studio_design.validate(brief)  # Must come from the approved manifest; never CLI override.
     runtime=Path(os.getenv('NEWS_SKILL_RUNTIME',str(Path(__file__).resolve().parents[2] / (Path(__file__).resolve().parents[1].name+'-runtime')))).resolve()
     remotion=runtime/'remotion'
