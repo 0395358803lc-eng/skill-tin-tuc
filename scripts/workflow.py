@@ -41,6 +41,39 @@ def now()->str:return dt.datetime.now(dt.timezone.utc).isoformat()
 locked=integrity.lock_job
 def filehash(f:Path)->str:return qa_engine.digest(f)
 def read(f:Path)->dict:return json.loads(f.read_text(encoding="utf-8-sig"))
+
+def checked_local_asset(job:Path, brief:dict, prefix:str)->Path|None:
+    """Resolve and fingerprint only a local, approval-bound audio asset."""
+    relative=brief.get(prefix+"_path")
+    expected=brief.get(prefix+"_sha256")
+    if relative is None and expected is None:
+        if prefix=="music" and brief.get("music_license"):
+            raise ValueError("unbound music license without approved media")
+        return None
+    if not isinstance(relative,str) or not relative.strip() or not isinstance(expected,str) or not re.fullmatch(r"[0-9a-fA-F]{64}",expected):
+        raise ValueError(prefix+" requires approved relative path and SHA-256")
+    p=Path(relative)
+    if p.is_absolute() or ".." in p.parts or p==Path("."):
+        raise ValueError(prefix+" must be a safe job-relative path")
+    target=(job/p).resolve()
+    if not target.is_relative_to(job.resolve()) or not target.is_file():
+        raise ValueError(prefix+" must exist inside the job workspace")
+    if filehash(target).lower()!=expected.lower():
+        raise ValueError(prefix+" checksum differs from user-approved script")
+    if prefix=="music":
+        if not isinstance(brief.get("music_license"),str) or not brief["music_license"].strip():
+            raise ValueError("music requires approved license evidence")
+        if target.suffix.lower() not in (".wav",".mp3",".flac",".m4a",".ogg"):
+            raise ValueError("unsupported background music format")
+    else:
+        if target.suffix.lower()!=".json":
+            raise ValueError("pronunciation lexicon must be JSON")
+        import narration_quality
+        words=read(target)
+        if not isinstance(words,dict):
+            raise ValueError("pronunciation lexicon must contain a JSON object")
+        narration_quality.lexicon_review(" ".join(s["narration"] for s in brief.get("stories",[])),words)
+    return target
 def write_once(p:Path,obj:dict)->None:
     integrity.json_new(p,obj)
 
@@ -63,7 +96,8 @@ def status(j:Path)->dict:
     artifact_names=("candidates.json","queue.json","research_screening.json",
         "stage17_evidence_review.json","evidence.json","review.json",
         "selection.json","script.json","draft.json","duration_advisory.json","confirmation.json","approved.json",
-        "technical_qa.json","handoff.json","handoff_visual_revision.json")
+        "render_result.json","technical_qa.json","technical_qa_recheck.json","technical_qa_recheck_02.json",
+        "handoff.json","handoff_visual_revision.json")
     files={p:p in {x.name for x in j.iterdir()} for p in artifact_names}
     if files["approved.json"]:
         legacy.validate_brief(read(j/"approved.json"),False)
@@ -95,6 +129,9 @@ def status(j:Path)->dict:
     state={"job_id":meta["job_id"],"stage":stage,"parameters":meta["parameters"],
            "artifacts":files,"job_directory":str(j),"next":instructions.get(stage)}
     state["recovery"]=integrity.recovery_plan(j)
+    state["mutation_blocked"]=not state["recovery"]["safe_to_mutate"]
+    if state["mutation_blocked"]:
+        state["next"]="RECOVERY BLOCKED: inspect checkpoint/lock/unfinished attempt; never rerun or auto-approve."
     if files["handoff_visual_revision.json"]:
         final=read(j/"handoff_visual_revision.json")
         state["final_delivery_folder"]=final.get("delivery_folder")
@@ -227,6 +264,10 @@ def script_draft(j:Path,script_file:Path)->dict:
                     raise ValueError('licensed media must exist in the approved job workspace')
                 if scene.get('media_sha256','').lower()!=filehash(candidate).lower():
                     raise ValueError('licensed media checksum is missing/incorrect')
+    # Reject unlicensed or modified local audio BEFORE freezing the script hash.
+    # Paths supplied in the candidate script are never allowed outside this job.
+    for key in ("music","pronunciation_lexicon"):
+        checked_local_asset(j,scripts,key)
     draft=core.draft_manifest(bundle,selection,scripts)
     guidance=duration_planner.predict([s["narration"] for s in draft["stories"]],
         draft["language"],draft["target_seconds"],1.0)
@@ -271,12 +312,16 @@ def render_job(j:Path,encoder:str="auto",speech_rate:float=1.,voice:str="")->dic
     if not (j/"approved.json").exists():raise ValueError("user approval required")
     brief=read(j/"approved.json")
     legacy.validate_brief(brief,False)
+    approved_music=checked_local_asset(j,brief,"music")
+    approved_lexicon=checked_local_asset(j,brief,"pronunciation_lexicon")
     if (j/"technical_qa.json").exists():raise ValueError("QA exists: do not rerender an approved job")
     if not .75<=speech_rate<=1.35:raise ValueError("speech rate out of range")
     env=dict(os.environ,NEWS_SKILL_RUNTIME=str(RUNTIME),PIPER_VOICE_DIR=str(RUNTIME/"models"),
              PIPER_SPEECH_RATE=str(speech_rate),PYTHONIOENCODING="utf-8",
              PYTHONDONTWRITEBYTECODE="1")
     env["PATH"]=str(RUNTIME/"tools"/"ffmpeg-selected")+os.pathsep+env.get("PATH","")
+    # No ambient workstation pronunciation map may affect a hashed brief.
+    env.pop("PIPER_PRONUNCIATION_MAP",None)
     tried=[]
     for iteration,mode in enumerate(([encoder,"cpu"] if encoder!="cpu" else ["cpu"]),1):
         target=j/f"attempt-{iteration:02d}"
@@ -284,6 +329,8 @@ def render_job(j:Path,encoder:str="auto",speech_rate:float=1.,voice:str="")->dic
         argv=[sys.executable,ROOT/"scripts"/"video_pipeline.py","--input",j/"approved.json",
               "--out",target,"--encoder",mode,"--speech-rate",str(speech_rate)]
         if voice:argv.extend(["--voice",voice])
+        if approved_music:argv.extend(["--music",approved_music])
+        if approved_lexicon:argv.extend(["--lexicon",approved_lexicon])
         code,output=run_process(argv,env,j/f"render-{iteration:02d}.log")
         tried.append({"attempt":iteration,"encoder":mode,"returncode":code,"output":str(target)})
         event(j,"RENDER_ATTEMPT",tried[-1])
